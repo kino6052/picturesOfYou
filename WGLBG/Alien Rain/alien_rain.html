@@ -21,11 +21,8 @@
 
 <script id="shader-vs" type="x-shader/x-vertex">
 attribute vec3 aVertexPosition;
-//attribute vec3 aTemp;
 attribute vec3 aVertexNormal;
-attribute float aIndex; // index of a rain particle
-
-uniform vec2 uDataArray; // array with data for each particle (offset and rotation)
+attribute vec2 aVertexTextureCoords;
 
 uniform mat4 uMVMatrix;
 uniform mat4 uPMatrix;
@@ -35,8 +32,9 @@ uniform vec3 uLightDirection;   //light direction
 uniform vec4 uLightDiffuse;     //light color
 uniform vec4 uMaterialDiffuse;  //object color
 
+varying vec2 vTextureCoord;
+
 varying vec4 vFinalColor;
-  
 
 void main(void) {
  //Transformed normal position
@@ -49,13 +47,13 @@ void main(void) {
  float lambertTerm = dot(N,-L);
  
  //Final Color
- vec4 addColor = vec4(aIndex, 0, aIndex, 1.0);
  vec4 Id = uMaterialDiffuse * uLightDiffuse * lambertTerm;
- vFinalColor = Id + addColor; 
+ vFinalColor = Id;
  vFinalColor.a = 1.0;
     
   //Transformed vertex position
-  gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition + vec3(aIndex, 0, aIndex), 1.0);
+  gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+  vTextureCoord = aVertexTextureCoords;
 }
 </script>
 
@@ -64,10 +62,13 @@ void main(void) {
 precision highp float;
 #endif
 
+uniform sampler2D uSampler;
+varying vec2 vTextureCoord;
 varying vec4  vFinalColor;
 
 void main(void)  {
- gl_FragColor = vFinalColor;
+ gl_FragColor = vFinalColor * texture2D(uSampler, vTextureCoord);
+
 }
 </script>
 
@@ -100,9 +101,38 @@ var indices;
 /*-----------------------------------------------------*/
 var normals;              //JavaScript Array for Normals
 /*-----------------------------------------------------*/
-var dataArray;
+var affineTransformationsArray = [];
 
 var angle = 0;
+
+// Droplet Properties
+var dropletQuantity = 100;
+var speed = 0.01;
+var rotationSpeed = 0.01;
+var spread = 3000;
+
+function initAffineTransformationsArray(){
+	affineTransformationsArray = []; // start with an empty array
+	for (var i = 0; i < dropletQuantity; i++) {
+		affineTransformationsArray[i] = new Array(0, 0, 0, 0, 0, 0);
+		// Random angles
+		affineTransformationsArray[i][0] = ((Math.random() * 1000) % 360) ; 
+		affineTransformationsArray[i][1] = ((Math.random() * 1000) % 360) ; 
+		affineTransformationsArray[i][2] = ((Math.random() * 1000) % 360) ; 
+		affineTransformationsArray[i][3] = ((Math.random() * 10000) % spread - spread/2) / 1000; 
+		affineTransformationsArray[i][4] = ((Math.random() * 10000) % 10000) / 1000; 
+		affineTransformationsArray[i][5] = ((Math.random() * 10000) % spread - spread/2) / 1000; 
+	}
+	console.log(affineTransformationsArray);
+}
+
+function updateAffineTransformationsArray(){
+	for (var i = 0; i < dropletQuantity; i++) {
+		// Random angles
+		affineTransformationsArray[i][1] -= rotationSpeed; affineTransformationsArray[i][1] = affineTransformationsArray[i][1] % 360;  // fall
+		affineTransformationsArray[i][4] -= speed; affineTransformationsArray[i][4] = affineTransformationsArray[i][4] % 1000;  // rotation 
+	}
+}
 
 /**
 * The program contains a series of instructions that tell the Graphic Processing Unit (GPU)
@@ -125,11 +155,7 @@ function initProgram() {
     gl.useProgram(prg);
 
     prg.aVertexPosition  = gl.getAttribLocation(prg, "aVertexPosition");
-	//prg.temp = gl.getAttribLocation(prg, "aTemp");
     prg.aVertexNormal    = gl.getAttribLocation(prg, "aVertexNormal");
-	prg.aIndex = gl.getAttribLocation(prg, "aIndex");
-	
-	prg.uDataArray = gl.getUniformLocation(prg, "uDataArray");
 	
     prg.uPMatrix         = gl.getUniformLocation(prg, "uPMatrix");
     prg.uMVMatrix        = gl.getUniformLocation(prg, "uMVMatrix");
@@ -155,36 +181,42 @@ function initBuffers()
 {
     vertices = [-0.5, -0.5, 0, 0.5, -0.5, 0, -0.5, 0.5, 0, 0.5, 0.5, 0];
 	indices = [0, 2, 1, 1, 2, 3];
-	dataArray = [1.0, -1.0, 0.0, 1.0]; // create array with offsets
-	dropletIndices = [0, 0, 0, 0, 1, 1, 1, 1, 0.5, 0.5, 0.5, 0.5]; // this will differentiate between different 
-	
 	
 	normals = utils.calculateNormals(vertices, indices);
 
-	dropletIndicesBuffer = gl.createBuffer();
-	gl.bindBuffer(gl.ARRAY_BUFFER, dropletIndicesBuffer);
-	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(dropletIndices), gl.STATIC_DRAW);
-	
-	dataArrayBuffer = gl.createBuffer();
-	gl.bindBuffer(gl.ARRAY_BUFFER, dataArrayBuffer);
-	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(dataArray), gl.STATIC_DRAW);
 	
     sphereVerticesBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, sphereVerticesBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.DYNAMIC_DRAW);
 
     sphereNormalsBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, sphereNormalsBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.STATIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.DYNAMIC_DRAW);
 
     sphereIndicesBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, sphereIndicesBuffer);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.DYNAMIC_DRAW);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 
 }
+
+    var mvMatrixStack = [];
+
+    function mvPushMatrix() {
+        var copy = mat4.create();
+        mat4.set(mvMatrix, copy);
+        mvMatrixStack.push(copy);
+    }
+
+    function mvPopMatrix() {
+        if (mvMatrixStack.length == 0) {
+            throw "Invalid popMatrix!";
+        }
+        mvMatrix = mvMatrixStack.pop();
+    }
+
 
 /**
 * Main rendering function. Called every 500ms according to WebGLStart function (see below)
@@ -197,54 +229,67 @@ function drawScene() {
     gl.viewport(0, 0, c_width, c_height);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
+	gl.uniformMatrix4fv(prg.uMVMatrix, false, mvMatrix);
+	gl.uniformMatrix4fv(prg.uPMatrix, false, pMatrix);
+	
     mat4.perspective(45, c_width / c_height, 0.1, 10000.0, pMatrix);
     
     mat4.identity(mvMatrix);
     mat4.translate(mvMatrix, [0.0, 0.0, -5.5]); //Sets the camera to a reasonable distance to view the part
     
-    gl.uniformMatrix4fv(prg.uMVMatrix, false, mvMatrix);
-    gl.uniformMatrix4fv(prg.uPMatrix, false, pMatrix);
+    
+    
+    try{
+        gl.enableVertexAttribArray(prg.aVertexPosition);
+        gl.enableVertexAttribArray(prg.aVertexTexCoord);
+        gl.enableVertexAttribArray(prg.aVertexNormal);
+        
+	
+        //2. bind buffers 
+		for (var i=0; i < dropletQuantity; i++){
+			//mat4.translate(mvMatrix, [qnt/100, -0.5, -0.5]);
+			mvPushMatrix();
+			mat4.translate(mvMatrix, [affineTransformationsArray[i][3], affineTransformationsArray[i][4], affineTransformationsArray[i][5]]);
+			mat4.rotate(mvMatrix, affineTransformationsArray[i][0], [1, 0, 0]);
+			mat4.rotate(mvMatrix, affineTransformationsArray[i][1], [0, 1, 0]);
+			mat4.rotate(mvMatrix, affineTransformationsArray[i][2], [0, 0, 1]);
+			mat4.scale(mvMatrix, [0.5, 0.5, 0.5]);
+			
+			gl.bindBuffer(gl.ARRAY_BUFFER, sphereVerticesBuffer);
+			gl.vertexAttribPointer(prg.aVertexPosition, 3, gl.FLOAT, false, 0, 0);
+			
+			gl.bindBuffer(gl.ARRAY_BUFFER, sphereVerticesBuffer);
+			gl.vertexAttribPointer(prg.temp, 3, gl.FLOAT, false, 0, 0);
+
+			gl.bindBuffer(gl.ARRAY_BUFFER, sphereNormalsBuffer);
+			gl.vertexAttribPointer(prg.aVertexNormal,3,gl.FLOAT, false, 0,0);
+
+			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,sphereIndicesBuffer);
+			gl.uniformMatrix4fv(prg.uMVMatrix, false, mvMatrix);
+			gl.uniformMatrix4fv(prg.uPMatrix, false, pMatrix);
+			
+			gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT,0);
+
+			gl.bindBuffer(gl.ARRAY_BUFFER, null);
+			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+			//console.log("Just Drew a Square");
+			mvPopMatrix();
+		}
+    }
+    catch(err){
+        alert(err);
+        //message(err.description);
+    }
+	
+
 
     mat4.set(mvMatrix, nMatrix);
     mat4.inverse(nMatrix);
     mat4.transpose(nMatrix);
     
     gl.uniformMatrix4fv(prg.uNMatrix, false, nMatrix);
-	gl.uniformMatrix2fv(prg.uDataArray, false, dataArray); //
-    
-    try{
-        gl.enableVertexAttribArray(prg.aVertexPosition);
-		//gl.enableVertexAttribArray(prg.temp);
-        gl.enableVertexAttribArray(prg.aVertexTexCoord);
-        gl.enableVertexAttribArray(prg.aVertexNormal);
-		gl.enableVertexAttribArray(prg.aIndex);
-        
-        //2. bind buffers 
-		for (var i=0; i<3; i++){
-			gl.bindBuffer(gl.ARRAY_BUFFER, dropletIndicesBuffer);
-			gl.vertexAttribPointer(prg.aIndex, 1, gl.FLOAT, false, 0, i * 16);
-		
-			gl.bindBuffer(gl.ARRAY_BUFFER, sphereVerticesBuffer);
-			gl.vertexAttribPointer(prg.aVertexPosition, 3, gl.FLOAT, false, 0, 0);
-			
-			gl.bindBuffer(gl.ARRAY_BUFFER, sphereVerticesBuffer);
-			//gl.vertexAttribPointer(prg.temp, 3, gl.FLOAT, false, 0, 0);
-
-			gl.bindBuffer(gl.ARRAY_BUFFER, sphereNormalsBuffer);
-			gl.vertexAttribPointer(prg.aVertexNormal,3,gl.FLOAT, false, 0,0);
-
-			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,sphereIndicesBuffer);
-			gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT,0);
-
-			gl.bindBuffer(gl.ARRAY_BUFFER, null);
-			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-			console.log("Just Drew a Square");
-		}
-    }
-    catch(err){
-        alert(err);
-        message(err.description);
-    }
+	
+	updateAffineTransformationsArray();
 }
 
 
@@ -263,6 +308,7 @@ function renderLoop() {
 * Entry point. This function is invoked when the page is loaded
 */
 function runWebGLApp() {
+	initAffineTransformationsArray();
     //Obtains a WebGL context
     gl = utils.getGLContext("canvas-element-id");
     //Initializes the program (shaders) 
