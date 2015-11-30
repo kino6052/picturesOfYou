@@ -34,6 +34,7 @@ uniform vec3 uLightDirection;   //light direction
 uniform vec4 uLightDiffuse;     //light color
 uniform vec4 uMaterialDiffuse;  //object color
 
+uniform bool uIsTextureEnabled;
 //varying vec2 vTextureCoord;
 
 varying vec4 vFinalColor;
@@ -51,7 +52,13 @@ void main(void) {
  //Final Color
  vec4 Id = uMaterialDiffuse * uLightDiffuse * lambertTerm;
  vFinalColor = Id;
- vFinalColor.a = 1.0;
+ 
+ if (uIsTextureEnabled) {
+     vFinalColor.a = 0.5;
+ }
+ if (!uIsTextureEnabled) {
+     vFinalColor.a = 1.0;
+ }
     
   //Transformed vertex position
   gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
@@ -65,6 +72,7 @@ precision highp float;
 #endif
 
 uniform sampler2D uSampler;
+uniform bool isTextureEnabled;
 //varying vec2 vTextureCoord;
 varying vec4  vFinalColor;
 
@@ -153,6 +161,8 @@ function initProgram() {
     prg.uMaterialDiffuse  = gl.getUniformLocation(prg, "uMaterialDiffuse");
     prg.uLightDiffuse     = gl.getUniformLocation(prg, "uLightDiffuse");
     prg.uLightDirection   = gl.getUniformLocation(prg, "uLightDirection");
+    
+    prg.uIsTextureEnabled = gl.getUniformLocation(prg, "uIsTextureEnabled");
     
     prg.samplerUniform = gl.getUniformLocation(prg, "uSampler");
 }
@@ -293,6 +303,13 @@ function drawScene() {
             
             gl.uniformMatrix4fv(prg.uMVMatrix, false, mvMatrix);
         	gl.uniformMatrix4fv(prg.uPMatrix, false, pMatrix);
+        	
+        	if (i % 2 == 0){
+        	    gl.uniform1i(prg.uIsTextureEnabled, true); 
+        	}
+        	else {
+        	    gl.uniform1i(prg.uIsTextureEnabled, false); 
+        	}
             
 			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, sphereIndicesBuffer);
 			
