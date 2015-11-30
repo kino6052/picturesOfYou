@@ -24,7 +24,7 @@
 <script id="shader-vs" type="x-shader/x-vertex">
 attribute vec3 aVertexPosition;
 attribute vec3 aVertexNormal;
-//attribute vec2 aTextureCoord;
+attribute vec2 aTextureCoord;
 
 uniform mat4 uMVMatrix;
 uniform mat4 uPMatrix;
@@ -35,7 +35,8 @@ uniform vec4 uLightDiffuse;     //light color
 uniform vec4 uMaterialDiffuse;  //object color
 
 uniform bool uIsTextureEnabled;
-//varying vec2 vTextureCoord;
+
+varying vec2 vTextureCoord;
 
 varying vec4 vFinalColor;
 
@@ -54,7 +55,8 @@ void main(void) {
  vFinalColor = Id;
  
  if (uIsTextureEnabled) {
-     vFinalColor.a = 0.5;
+     vFinalColor.a = 1.0;
+     vTextureCoord = aTextureCoord;
  }
  if (!uIsTextureEnabled) {
      vFinalColor.a = 1.0;
@@ -62,7 +64,7 @@ void main(void) {
     
   //Transformed vertex position
   gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
-  //vTextureCoord = aTextureCoord;
+  
 }
 </script>
 
@@ -72,13 +74,18 @@ precision highp float;
 #endif
 
 uniform sampler2D uSampler;
-uniform bool isTextureEnabled;
-//varying vec2 vTextureCoord;
+uniform bool uIsTextureEnabled;
+varying vec2 vTextureCoord;
 varying vec4  vFinalColor;
 
 void main(void)  {
- gl_FragColor = vFinalColor; //texture2D(uSampler, vTextureCoord);
-
+ 
+ if (uIsTextureEnabled) {
+     gl_FragColor = texture2D(uSampler, vTextureCoord);
+ }
+ if (!uIsTextureEnabled) {
+     gl_FragColor = vFinalColor; //texture2D(uSampler, vTextureCoord);
+ }
 }
 </script>
 
@@ -99,6 +106,9 @@ var nMatrix =  mat4.create();       // The normal matrix
 
 var sphereVerticesBuffer;
 var sphereIndicesBuffer;
+var screenVerticesBuffer;
+var screenIndicesBuffer;
+var screenNormalsBuffer;
 var dataArrayBuffer;
 
 /*-----------------------------------------------------*/
@@ -114,6 +124,8 @@ var normals;              //JavaScript Array for Normals
 /*-----------------------------------------------------*/
 var textureCoords;
 var affineTransformationsArray = [];
+
+var mode = 0;
 
 var angle = 0;
 
@@ -152,8 +164,7 @@ function initProgram() {
     prg.aVertexPosition  = gl.getAttribLocation(prg, "aVertexPosition");
     prg.aVertexNormal    = gl.getAttribLocation(prg, "aVertexNormal");
     prg.aTextureCoord = gl.getAttribLocation(prg, "aTextureCoord");
-    //gl.enableVertexAttribArray(prg.aTextureCoord);
-	
+    
     prg.uPMatrix         = gl.getUniformLocation(prg, "uPMatrix");
     prg.uMVMatrix        = gl.getUniformLocation(prg, "uMVMatrix");
     prg.uNMatrix         = gl.getUniformLocation(prg, "uNMatrix");
@@ -165,6 +176,12 @@ function initProgram() {
     prg.uIsTextureEnabled = gl.getUniformLocation(prg, "uIsTextureEnabled");
     
     prg.samplerUniform = gl.getUniformLocation(prg, "uSampler");
+    
+    if (mode == 0){
+        gl.enableVertexAttribArray(prg.aTextureCoord);
+         gl.uniform1i(prg.samplerUniform, 0);
+    }
+   
 }
 
 
@@ -179,17 +196,33 @@ function initLights(){
 */
 function initBuffers()
 {
+    screenVertices = [-0.5, -0.5, 0, 0.5, -0.5, 0, -0.5, 0.5, 0, 0.5, 0.5, 0];
+	screenIndices = [0, 2, 1, 1, 2, 3];
+	screenNormals = utils.calculateNormals(screenVertices, screenIndices);
+    
     textureCoords = [
-          // Front face
-          0.0, 0.0,
           0.0, 1.0,
-          1.0, 0.0,
-          1.0, 1.0
+          1.0, 1.0,
+          0.0, 0.0,
+          1.0, 0.0
     ];
 	
 	normals = utils.calculateNormals(tv.vertices, tv.indices);
 
+	screenVerticesBuffer = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, screenVerticesBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(screenVertices), gl.DYNAMIC_DRAW);
 	
+	screenNormalsBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, screenNormalsBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(screenNormals), gl.DYNAMIC_DRAW);
+
+    
+    
+
+    screenIndicesBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, screenIndicesBuffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(screenIndices), gl.DYNAMIC_DRAW);
 	
 	
     sphereVerticesBuffer = gl.createBuffer();
@@ -200,9 +233,12 @@ function initBuffers()
     gl.bindBuffer(gl.ARRAY_BUFFER, sphereNormalsBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.DYNAMIC_DRAW);
 
-    //cubeVertexTextureCoordBuffer = gl.createBuffer();
-    //gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexTextureCoordBuffer);
-    //gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoords), gl.DYNAMIC_DRAW);
+    if (mode == 0){
+        cubeVertexTextureCoordBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexTextureCoordBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoords), gl.DYNAMIC_DRAW);
+    }
+    
 
     sphereIndicesBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, sphereIndicesBuffer);
@@ -231,12 +267,14 @@ function mvPopMatrix() {
 
 /* TEXTURE OPERATIONS */
 function handleLoadedTexture(texture) {
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texture.image);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-        gl.bindTexture(gl.TEXTURE_2D, null);
+        gl.bindTexture(gl.TEXTURE_2D, neheTexture);
+        //gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+        
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T,     gl.CLAMP_TO_EDGE);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S,     gl.CLAMP_TO_EDGE);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        //gl.bindTexture(gl.TEXTURE_2D, null);
 }
 
 
@@ -246,7 +284,8 @@ function initTexture() {
     neheTexture = gl.createTexture();
     neheTexture.image = new Image();
     neheTexture.image.onload = function () {
-        //handleLoadedTexture(neheTexture);
+        console.log("loaded texture");
+        handleLoadedTexture(neheTexture);
     };
 
     neheTexture.image.src = "polaroid.jpg";
@@ -279,13 +318,11 @@ function drawScene() {
         mat4.rotate(mvMatrix, angle, [0,1,0]);
 	    
         //2. bind buffers 
-		for (var i=0; i < dropletQuantity; i++){
+		if (mode == 1){
 			//mat4.translate(mvMatrix, [qnt/100, -0.5, -0.5]);
 			mvPushMatrix();
-			mat4.translate(mvMatrix, [affineTransformationsArray[i][3], affineTransformationsArray[i][4], affineTransformationsArray[i][5]]);
-			mat4.rotate(mvMatrix, affineTransformationsArray[i][0], [1, 0, 0]);
-			mat4.rotate(mvMatrix, affineTransformationsArray[i][1], [0, 1, 0]);
-			mat4.rotate(mvMatrix, affineTransformationsArray[i][2], [0, 0, 1]);
+			mat4.translate(mvMatrix, [0, 0, 0]);
+			
 			mat4.scale(mvMatrix, [0.3, 0.3, 0.3]);
 			
 			gl.bindBuffer(gl.ARRAY_BUFFER, sphereVerticesBuffer);
@@ -304,16 +341,66 @@ function drawScene() {
             gl.uniformMatrix4fv(prg.uMVMatrix, false, mvMatrix);
         	gl.uniformMatrix4fv(prg.uPMatrix, false, pMatrix);
         	
-        	if (i % 2 == 0){
-        	    gl.uniform1i(prg.uIsTextureEnabled, true); 
-        	}
-        	else {
-        	    gl.uniform1i(prg.uIsTextureEnabled, false); 
-        	}
+        	
+        	gl.uniform1i(prg.uIsTextureEnabled, false); 
+        	
             
 			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, sphereIndicesBuffer);
 			
 			gl.drawElements(gl.TRIANGLES, tv.indices.length, gl.UNSIGNED_SHORT,0);
+            
+			gl.bindBuffer(gl.ARRAY_BUFFER, null);
+			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+			//console.log("Just Drew a Square");
+			mvPopMatrix();
+		}
+		if (mode == 0) {
+		    //mat4.translate(mvMatrix, [qnt/100, -0.5, -0.5]);
+			mvPushMatrix();
+			mat4.translate(mvMatrix, [0, 0, 0]);
+			
+			mat4.scale(mvMatrix, [1.0, 1.0, 1.0]);
+			
+			gl.bindBuffer(gl.ARRAY_BUFFER, screenVerticesBuffer);
+			gl.vertexAttribPointer(prg.aVertexPosition, 3, gl.FLOAT, false, 0, 0);
+
+			gl.bindBuffer(gl.ARRAY_BUFFER, screenNormalsBuffer);
+			gl.vertexAttribPointer(prg.aVertexNormal,3,gl.FLOAT, false, 0,0);
+            
+            gl.uniform1i(prg.uIsTextureEnabled, true); 
+            
+            gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexTextureCoordBuffer);
+            gl.vertexAttribPointer(prg.aTextureCoord, 2, gl.FLOAT, false, 0, 0);
+
+            
+            
+            
+            gl.activeTexture(gl.TEXTURE0);
+			gl.bindTexture(gl.TEXTURE_2D, neheTexture);
+
+			if (videoready)
+			{
+				try
+				{
+					// upload the video frame
+					gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, video);
+				}
+				catch(e)
+				{
+					// log only the first few errors
+					
+				}
+			}
+
+            
+            
+            
+            gl.uniformMatrix4fv(prg.uMVMatrix, false, mvMatrix);
+        	gl.uniformMatrix4fv(prg.uPMatrix, false, pMatrix);
+            
+			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, screenIndicesBuffer);
+			
+			gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT,0);
             
 			gl.bindBuffer(gl.ARRAY_BUFFER, null);
 			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
@@ -337,7 +424,9 @@ function drawScene() {
 }
 
 
-
+function initVideo() {
+    
+}
 
 
 /**
@@ -348,6 +437,8 @@ function renderLoop() {
     drawScene();
 }
 
+var video = document.createElement("video");
+var videoready = false;
 /**
 * Entry point. This function is invoked when the page is loaded
 */
@@ -362,9 +453,40 @@ function runWebGLApp() {
     //Initializes lights
     initLights();
     //Renders the scene!
+    // load the video
+		
+		video.autoplay = true;
+		video.loop = true;
+		video.oncanplay = function(){ videoready=true; }
+		
+		video.onerror = function()
+		{
+			var err = "unknown error";
+			
+			switch(video.error.code)
+			{
+				case 1: err = "video loading aborted"; break;
+				case 2: err = "network loading error"; break;
+				case 3: err = "video decoding failed / corrupted data or unsupported codec"; break;
+				case 4: err = "video not supported"; break;
+			}; 
+			
+			log("Error: " + err + " (errorcode="+video.error.code+")", "color:red;");
+		};
+		
+		video.src = "video/pictures.mp4";
+
+		// try to disable the iPhone video fullscreen mode:
+		video.setAttribute("playsinline", "");
+		video.setAttribute("webkit-playsinline", "");
+
+		// try to start playing
+		video.play();
+
     initTexture();
+    
+    
     renderLoop();
-    audio.play();
 }
 </script>
 </head>
@@ -482,6 +604,6 @@ $('#colorSelectorSphere').ColorPicker({
  })
 
 </script>
-<audio id="audio" src="pics.mp3" preload="auto" autoplay></audio>
+<audio id="audio" src="pics.mp3" preload="auto"></audio>
 </body>
 </html>
