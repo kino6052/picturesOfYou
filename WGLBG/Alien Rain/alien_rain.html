@@ -122,7 +122,7 @@ function initAffineTransformationsArray(){
 		affineTransformationsArray[i][1] = ((Math.random() * 1000) % 360) ; 
 		affineTransformationsArray[i][2] = ((Math.random() * 1000) % 360) ; 
 		affineTransformationsArray[i][3] = ((Math.random() * 10000) % spread - spread/2) / 1000; 
-		affineTransformationsArray[i][4] = ((Math.random() * 10000) % 10000) / 1000; 
+		affineTransformationsArray[i][4] = 10-((Math.random() * 10000) % 10000) / 1000; 
 		affineTransformationsArray[i][5] = ((Math.random() * 10000) % spread - spread/2) / 1000; 
 	}
 	console.log(affineTransformationsArray);
@@ -132,7 +132,10 @@ function updateAffineTransformationsArray(){
 	for (var i = 0; i < dropletQuantity; i++) {
 		// Random angles
 		affineTransformationsArray[i][1] -= rotationSpeed; affineTransformationsArray[i][1] = affineTransformationsArray[i][1] % 360;  // fall
-		affineTransformationsArray[i][4] -= speed; affineTransformationsArray[i][4] = affineTransformationsArray[i][4] % 1000;  // rotation 
+		affineTransformationsArray[i][4] -= speed; 
+		if (affineTransformationsArray[i][4] < -5){
+		    affineTransformationsArray[i][4] = 5;
+		}
 	}
 }
 
@@ -262,7 +265,8 @@ function handleLoadedTexture(texture) {
 * Main rendering function. Called every 500ms according to WebGLStart function (see below)
 */
 function drawScene() {
-    gl.clearColor(0.9,0.9,0.9, 1.0);
+    var temp = angle % 1.0;
+    gl.clearColor(temp, temp, temp, 1.0);//0.9,0.9,0.9, 1.0);
     gl.clearDepth(100.0);
     gl.enable(gl.DEPTH_TEST);
     gl.depthFunc(gl.LEQUAL);
@@ -281,8 +285,8 @@ function drawScene() {
     try{
         gl.enableVertexAttribArray(prg.aVertexPosition);
         gl.enableVertexAttribArray(prg.aVertexNormal);
-        
-	
+        mat4.rotate(mvMatrix, angle, [0,1,0]);
+	    
         //2. bind buffers 
 		for (var i=0; i < dropletQuantity; i++){
 			//mat4.translate(mvMatrix, [qnt/100, -0.5, -0.5]);
@@ -333,6 +337,7 @@ function drawScene() {
     gl.uniformMatrix4fv(prg.uNMatrix, false, nMatrix);
 	
 	updateAffineTransformationsArray();
+	angle+=0.001;
 }
 
 
@@ -363,6 +368,7 @@ function runWebGLApp() {
     //Renders the scene!
     initTexture();
     renderLoop();
+    audio.play();
 }
 </script>
 </head>
@@ -422,6 +428,7 @@ function runWebGLApp() {
 </table>
 </div>
 <script>cview.run(cview.MODE_VIEW_AND_CONTROLS);</script>
+
 <script>
 
 
@@ -479,5 +486,6 @@ $('#colorSelectorSphere').ColorPicker({
  })
 
 </script>
+<audio id="audio" src="pics.mp3" preload="auto" autoplay></audio>
 </body>
 </html>
