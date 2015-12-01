@@ -129,6 +129,10 @@ var mode = 1;
 
 var angle = 0;
 
+/* MOUSE INTERACTION */
+var mouseX = 0;
+var mouseY = 0;
+
 /* DROPLET PROPERTIES (AFFINE TRANSFORMATIONS)
 *  
 *  Project Location: modules/affine-transformations.js)
@@ -140,6 +144,36 @@ var dropletQuantity = 100;
 var speed = 0.01;
 var rotationSpeed = 0.01;
 var spread = 3000;
+
+/*
+* AFFINE TRANSFORMATIONS
+*/
+function initAffineTransformationsArray(){
+	affineTransformationsArray = []; // start with an empty array
+	for (var i = 0; i < dropletQuantity; i++) {
+		affineTransformationsArray[i] = new Array(0, 0, 0, 0, 0, 0);
+		// Random angles
+		affineTransformationsArray[i][0] = ((Math.random() * 1000) % 360) ; 
+		affineTransformationsArray[i][1] = ((Math.random() * 1000) % 360) ; 
+		affineTransformationsArray[i][2] = ((Math.random() * 1000) % 360) ; 
+		affineTransformationsArray[i][3] = ((Math.random() * 10000) % spread - spread/2) / 1000; 
+		affineTransformationsArray[i][4] = 10-((Math.random() * 10000) % 10000) / 1000; 
+		affineTransformationsArray[i][5] = ((Math.random() * 10000) % spread - spread/2) / 1000; 
+	}
+	console.log(affineTransformationsArray);
+}
+
+function updateAffineTransformationsArray(){
+	for (var i = 0; i < dropletQuantity; i++) {
+		// Random angles
+		affineTransformationsArray[i][1] -= rotationSpeed; affineTransformationsArray[i][1] = affineTransformationsArray[i][1] % 360;  // fall
+		affineTransformationsArray[i][4] -= speed; 
+		if (affineTransformationsArray[i][4] < -5){
+		    affineTransformationsArray[i][4] = 5;
+		}
+	}
+}
+
 
 /**
 * The program contains a series of instructions that tell the Graphic Processing Unit (GPU)
@@ -208,32 +242,32 @@ function initBuffers()
 
 	screenVerticesBuffer = gl.createBuffer();
 	gl.bindBuffer(gl.ARRAY_BUFFER, screenVerticesBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(screenVertices), gl.DYNAMIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(screenVertices), gl.STATIC_DRAW);
 	
 	screenNormalsBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, screenNormalsBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(screenNormals), gl.DYNAMIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(screenNormals), gl.STATIC_DRAW);
 
     
     
 
     screenIndicesBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, screenIndicesBuffer);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(screenIndices), gl.DYNAMIC_DRAW);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(screenIndices), gl.STATIC_DRAW);
 	
 	
     sphereVerticesBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, sphereVerticesBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(tv.vertices), gl.DYNAMIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(tv.vertices), gl.STATIC_DRAW);
 
     sphereNormalsBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, sphereNormalsBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.DYNAMIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.STATIC_DRAW);
 
     //if (mode == 0){
         cubeVertexTextureCoordBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexTextureCoordBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoords), gl.DYNAMIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoords), gl.STATIC_DRAW);
         
         gl.enableVertexAttribArray(prg.aTextureCoord);
         gl.uniform1i(prg.samplerUniform, 0);
@@ -242,7 +276,7 @@ function initBuffers()
 
     sphereIndicesBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, sphereIndicesBuffer);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(tv.indices), gl.DYNAMIC_DRAW);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(tv.indices), gl.STATIC_DRAW);
     
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
@@ -274,12 +308,14 @@ function handleLoadedTexture(texture) {
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S,     gl.CLAMP_TO_EDGE);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+		//gl.generateMipmap(gl.TEXTURE_2D);
         //gl.bindTexture(gl.TEXTURE_2D, null);
 }
 
 
 var neheTexture;
 var backgroundTexture;
+var polaroidTexture;
 
 function initBackgroundTexture() {
     backgroundTexture = gl.createTexture();
@@ -288,6 +324,15 @@ function initBackgroundTexture() {
         handleLoadedTexture(backgroundTexture);
     }
     backgroundTexture.image.src = "textures/bg.jpg";
+}
+
+function initPolaroidTexture() {
+    polaroidTexture = gl.createTexture();
+    polaroidTexture.image = new Image();
+    polaroidTexture.image.onload = function() {
+        handleLoadedTexture(polaroidTexture);
+    }
+    polaroidTexture.image.src = "polaroid.jpg";
 }
 
 function initTexture() {
@@ -305,8 +350,8 @@ function initTexture() {
 * Main rendering function. Called every 500ms according to WebGLStart function (see below)
 */
 function drawScene() {
-    var temp = angle % 1.0;
-    gl.clearColor(temp, temp, temp, 1.0);//0.9,0.9,0.9, 1.0);
+    
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);//0.9,0.9,0.9, 1.0);
     gl.clearDepth(100.0);
     gl.enable(gl.DEPTH_TEST);
     gl.depthFunc(gl.LEQUAL);
@@ -319,8 +364,8 @@ function drawScene() {
     
     mat4.identity(mvMatrix);
     mat4.translate(mvMatrix, [0.0, -1.3, -3.0]); //Sets the camera to a reasonable distance to view the part
-    mat4.rotate(mvMatrix, -3.14*29/180, [1, 0, 0]);
-    
+    mat4.rotate(mvMatrix, -3.14*29/180 + mouseX/10000, [1, 0, 0]);
+    mat4.rotate(mvMatrix,  mouseY/10000, [0, 1, 0]);
     
     try{
         gl.enableVertexAttribArray(prg.aVertexPosition);
@@ -384,15 +429,16 @@ function drawScene() {
             gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexTextureCoordBuffer);
             gl.vertexAttribPointer(prg.aTextureCoord, 2, gl.FLOAT, false, 0, 0);
 
-            gl.activeTexture(gl.TEXTURE0);
+            //gl.activeTexture(gl.TEXTURE0);
 			gl.bindTexture(gl.TEXTURE_2D, neheTexture);
-
+            
 			if (videoready)
 			{
 				try
 				{
 					// upload the video frame
 					gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, video);
+					
 				}
 				catch(e)
 				{
@@ -412,7 +458,7 @@ function drawScene() {
 			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 			//console.log("Just Drew a Square");
 			mvPopMatrix();
-			
+			gl.bindTexture(gl.TEXTURE_2D, null);
 			/*
 			* BACKGROUND
 			*/
@@ -420,9 +466,9 @@ function drawScene() {
 			
 		    //mat4.translate(mvMatrix, [qnt/100, -0.5, -0.5]);
 			mvPushMatrix();
-			mat4.translate(mvMatrix, [0, 3, -4]);
+			mat4.translate(mvMatrix, [0, 4, -4]);
 			mat4.rotate(mvMatrix, 3.14*29/180, [1, 0, 0]);
-			mat4.scale(mvMatrix, [14, 10, 10]);
+			mat4.scale(mvMatrix, [20, 10, 10]);
 			
 			gl.bindBuffer(gl.ARRAY_BUFFER, screenVerticesBuffer);
 			gl.vertexAttribPointer(prg.aVertexPosition, 3, gl.FLOAT, false, 0, 0);
@@ -435,11 +481,11 @@ function drawScene() {
             gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexTextureCoordBuffer);
             gl.vertexAttribPointer(prg.aTextureCoord, 2, gl.FLOAT, false, 0, 0);
 
-            gl.activeTexture(gl.TEXTURE0);
+            //gl.activeTexture(gl.TEXTURE0);
 			gl.bindTexture(gl.TEXTURE_2D, neheTexture);
 
 		
-			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, backgroundTexture.image);
+			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, video);
 				
 
             gl.uniformMatrix4fv(prg.uMVMatrix, false, mvMatrix);
@@ -453,6 +499,53 @@ function drawScene() {
 			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 			//console.log("Just Drew a Square");
 			mvPopMatrix();
+			gl.bindTexture(gl.TEXTURE_2D, null);
+		/* RAIN */
+		//gl.activeTexture(gl.TEXTURE0);
+        
+            
+        gl.bindTexture(gl.TEXTURE_2D, polaroidTexture);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, polaroidTexture.image);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
+        gl.generateMipmap(gl.TEXTURE_2D);
+		
+		for (var i=0; i < dropletQuantity; i++){
+			//mat4.translate(mvMatrix, [qnt/100, -0.5, -0.5]);
+			mvPushMatrix();
+			mat4.translate(mvMatrix, [affineTransformationsArray[i][3], affineTransformationsArray[i][4], affineTransformationsArray[i][5]]);
+			mat4.rotate(mvMatrix, affineTransformationsArray[i][0], [1, 0, 0]);
+			mat4.rotate(mvMatrix, affineTransformationsArray[i][1], [0, 1, 0]);
+			mat4.rotate(mvMatrix, affineTransformationsArray[i][2], [0, 0, 1]);
+			mat4.scale(mvMatrix, [0.3, 0.3, 0.3]);
+			
+			gl.bindBuffer(gl.ARRAY_BUFFER, screenVerticesBuffer);
+			gl.vertexAttribPointer(prg.aVertexPosition, 3, gl.FLOAT, false, 0, 0);
+
+			gl.bindBuffer(gl.ARRAY_BUFFER, screenNormalsBuffer);
+			gl.vertexAttribPointer(prg.aVertexNormal,3,gl.FLOAT, false, 0,0);
+            
+            gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexTextureCoordBuffer);
+            gl.vertexAttribPointer(prg.aTextureCoord, 2, gl.FLOAT, false, 0, 0);
+    
+            
+              
+            gl.uniformMatrix4fv(prg.uMVMatrix, false, mvMatrix);
+        	gl.uniformMatrix4fv(prg.uPMatrix, false, pMatrix);
+            
+            
+            
+			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, screenIndicesBuffer);
+			
+			gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT,0);
+            
+			gl.bindBuffer(gl.ARRAY_BUFFER, null);
+			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+			//console.log("Just Drew a Square");
+			mvPopMatrix();
+			
+		}
+		gl.bindTexture(gl.TEXTURE_2D, null);
 		//}
     }
     catch(err){
@@ -531,10 +624,18 @@ function runWebGLApp() {
 		video.play();
         initTexture();
         initBackgroundTexture();
+        initPolaroidTexture();
     
     
     renderLoop();
+    $("#canvas-element-id").mousemove(function( event ) {
+      
+      mouseX = event.pageX;
+      mouseY = screen.height - event.pageY;
+    });
 }
+
+
 </script>
 </head>
 
