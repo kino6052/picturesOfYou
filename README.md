@@ -1,24 +1,28 @@
 # picturesOfYou
-
 Kirill Novik CSCI 4229: Music Video for the Cure Song "Pictures of You" Made in WebGL
 
+### Instructions
+
+* Project source can be easily viewed here: https://ide.c9.io/kino6052/pictures_of_you
+* Result can be viewed here: https://pictures-of-you-kino6052.c9users.io/
+
 ##### Project Layout
-Project Components:                                       Attributions:
+Project Components:                                       (Attributions)
 
   1. Vertex and Fragment Shaders                          
-    1. Goroud Shading                                     WebGL Beginner's Guide
-    2. Lambert Lighting                                   WebGL Beginner's Guide
-    3. Textures                                           WebGL Beginner's Guide, webglacademy.com
+    1. Goroud Shading                                     _(WebGL Beginner's Guide)
+    2. Lambert Lighting                                   _(WebGL Beginner's Guide)
+    3. Textures                                           _(WebGL Beginner's Guide, webglacademy.com)
   2. Post-processing Vertex and Fragment Shaders
-    1. Wave Effect                                        OpenGL_Programming wiki book          
-    2. Noise Effect                                       stackoverflow.com/questions/4200224/random-noise-functions-for-glsl
+    1. Wave Effect                                        _(OpenGL_Programming wiki book)          
+    2. Noise Effect                                       _(stackoverflow.com/questions/4200224/random-noise-functions-for-glsl)
     3. Black and White Effect
-    4. Blur Effect                                        WebGL Beginner's Guide
+    4. Blur Effect                                        _(WebGL Beginner's Guide)
   3. Objects
     1. Planes
        1. Static Texture
-       2. Video Texture                                   krpano.com/ios/bugs/ios8-webgl-video/
-    2. Blender TV set 3d Model                            Turbo-Squid.com 
+       2. Video Texture                                   _(krpano.com/ios/bugs/ios8-webgl-video/)
+    2. Blender TV set 3d Model                            _(Turbo-Squid.com)
 
 ##### Description
 One of the personal goals  I had for this project was to study the WebGL pipeline on the scale ranging from the basic surface generation to the post processing effects. Looking back, I have to admit that WebGL API has a relatively steep learning curve: while separate components made much sense, it was still challenging to connect the dots and achieve the result I had in mind - a complete music video visualization with animation and visual effects. 
