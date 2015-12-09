@@ -164,9 +164,9 @@ CodeViewer.prototype.updateGUI = function(){
 	}
     //4. Look and Feel
     
-    $('#btnFullView').after("<label id='lblFullView' for='btnFullView'>View</label>");
-	$('#btnShowCode').after("<label id='lblShowCode' for='btnShowCode'>Code</label>");
-	$('#btnShowControls').after("<label id='lblShowControls' for='btnShowControls'>Controls</label>");
+    //$('#btnFullView').after("<label id='lblFullView' for='btnFullView'>View</label>");
+	//$('#btnShowCode').after("<label id='lblShowCode' for='btnShowCode'>Code</label>");
+	//$('#btnShowControls').after("<label id='lblShowControls' for='btnShowControls'>Controls</label>");
 	$('#buttonsCanvas').buttonset();
 	
 	$('#buttonsCode').buttonset(); 
@@ -208,7 +208,10 @@ CodeViewer.prototype.run = function(m,nc){
         $('#canvasContainer').before("<pre id='codeContainer' class='prettyprint linenums'><p class='wait'>One moment please. Loading source code ...</p></pre>");
     }
 	
+	
+	$('#canvasContainer, #bottom').fadeIn(600);
 	this.TIMER = setInterval((function(self) {return function() {self.execute();}})(this),this.WAIT);
+	
 }
 
 CodeViewer.prototype.execute = function(){

@@ -71,6 +71,56 @@ void main(void) {
 }
 </script>
 
+<script id="shader-post-vs" type="x-shader/x-vertex">
+/* 
+ *  VERTEX SHADER (POST)
+ *  Many thanks to the "WebGL: Beginner's Guide" Book
+ *  This shader implements Goraud shading and Lambert Lighting.
+ */
+attribute vec3 aVertexPosition;
+attribute vec3 aVertexNormal;
+attribute vec2 aTextureCoord;
+
+uniform mat4 uMVMatrix;
+uniform mat4 uPMatrix;
+uniform mat4 uNMatrix;
+
+uniform vec3 uLightDirection;   //light direction
+uniform vec4 uLightDiffuse;     //light color
+uniform vec4 uMaterialDiffuse;  //object color
+
+uniform bool uIsTextureEnabled;
+varying vec2 vTextureCoord;
+varying vec4 vFinalColor;
+
+void main(void) {
+ //Transformed normal position
+ vec3 N = normalize(vec3(uNMatrix * vec4(aVertexNormal, 1.0)));
+    
+ //Normalize light to calculate lambertTerm
+ vec3 L = normalize(uLightDirection);
+ 
+ //Lambert's cosine law
+ float lambertTerm = dot(N,-L);
+ 
+ //Final Color
+ vec4 Id = uMaterialDiffuse * uLightDiffuse * lambertTerm;
+ vFinalColor = Id;
+ 
+ if (uIsTextureEnabled) {
+     vFinalColor.a = 1.0;
+     vTextureCoord = aTextureCoord;
+ }
+ if (!uIsTextureEnabled) {
+     vFinalColor.a = 1.0;
+ }
+    
+  //Transformed vertex position
+  gl_Position = vec4(-aVertexPosition * 2.1, 1.0);
+  
+}
+</script>
+
 
 <script id="shader-fs" type="x-shader/x-fragment">
 /* 
@@ -110,16 +160,49 @@ precision highp float;
 
 uniform sampler2D uSampler;
 uniform bool uIsTextureEnabled;
+uniform int uFX; // integer representing a post processing effect to be applied 
+/*
+*  0 - No Effect
+*  1 - Black and White
+*  2 - Wave
+*  3 - Blur
+*/
+// POST PROCESSING PARAMETERS
+uniform float uBlurAmount;
+uniform float uWaveAmount;
+uniform float uTime;
+uniform bool uBW;
+
 varying vec2 vTextureCoord;
 varying vec4  vFinalColor;
 
+vec4 offsetLookup(float xOff, float yOff) {
+    return texture2D(uSampler, vec2(vTextureCoord.x + xOff*0.01, vTextureCoord.y + yOff*0.01));
+}
+
+float rand(vec2 co){
+    return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
+}
+
 void main(void)  {
- 
- if (uIsTextureEnabled) {
-     gl_FragColor = texture2D(uSampler, vTextureCoord);
+ vec4 frameColor = offsetLookup(-4.0, 0.0) * 0.05 * uBlurAmount;
+    frameColor += offsetLookup(-3.0, 0.0) * 0.09 * uBlurAmount;
+    frameColor += offsetLookup(-2.0, 0.0) * 0.12 * uBlurAmount;
+    frameColor += offsetLookup(-1.0, 0.0) * 0.15 * uBlurAmount;
+    frameColor += offsetLookup(0.0, 0.0) * 0.16 * uBlurAmount;
+    frameColor += offsetLookup(1.0, 0.0) * 0.15 * uBlurAmount;
+    frameColor += offsetLookup(2.0, 0.0) * 0.12 * uBlurAmount;
+    frameColor += offsetLookup(3.0, 0.0) * 0.09 * uBlurAmount;
+    frameColor += offsetLookup(4.0, 0.0) * 0.05 * uBlurAmount;
+
+ vec2 texcoord = vTextureCoord;
+ texcoord.x += sin(texcoord.y * 4.0 * 2.0 * 3.14159 * uWaveAmount + uTime) / 100.0;
+ vec4 fragment = (texture2D(uSampler, texcoord) + frameColor)/2.0 + rand(vTextureCoord + mod(uTime, 10.0))/5.0;
+ if (uBW){
+     gl_FragColor = vec4(fragment.r, fragment.r, fragment.r, 1.0);
  }
- if (!uIsTextureEnabled) {
-     gl_FragColor = vFinalColor; //texture2D(uSampler, vTextureCoord);
+ if (!uBW){
+     gl_FragColor = fragment;
  }
 }
 </script>
@@ -128,10 +211,12 @@ void main(void)  {
 
 var gl = null; // WebGL context
 var prg = null; // The program (shaders)
+var postPrg = null;
 var c_width = 0; // Variable to store the width of the canvas
 var c_height = 0; // Variable to store the height of the canvas
 
 var mvMatrix = mat4.create(); // The Model-View matrix
+var postMatrix = mat4.create(); // Model-view matrix for post processing
 var pMatrix = mat4.create(); // The projection matrix
 
 /*-----------------------------------------------------*/
@@ -157,9 +242,8 @@ var normals;              //JavaScript Array for Normals
 var textureCoords;
 var affineTransformationsArray = [];
 
-var mode = 1;
-var angle = 0;
-
+var time = 0;
+var timeIncrement = 0.05;
 /* MOUSE INTERACTION */
 var mouseX = 0;
 var mouseY = 0;
@@ -171,6 +255,9 @@ var videoready = false;
 /* POST PROCESSING */
 var framebuffer;
 var renderbuffer;
+var blurAmount = 1.0;
+var waveAmount = 1.0;
+var bw = 0;
 
 /* DROPLET PROPERTIES (AFFINE TRANSFORMATIONS)
 *  
@@ -222,7 +309,40 @@ function updateAffineTransformationsArray(){
 function initProgram() {
     var fragmentShader          = utils.getShader(gl, "shader-fs");
     var vertexShader            = utils.getShader(gl, "shader-vs");
+    var postVertexShader            = utils.getShader(gl, "shader-post-vs");
+    var postShader              = utils.getShader(gl, "shader-post-fs");
 
+    postPrg = gl.createProgram();
+    gl.attachShader(postPrg, postVertexShader);
+    gl.attachShader(postPrg, postShader);
+    gl.linkProgram(postPrg);
+
+    if (!gl.getProgramParameter(postPrg, gl.LINK_STATUS)) {
+        alert("Could not initialise shaders");
+    }
+
+
+    // Locations of Various Resources that "prg" will be Using
+    postPrg.aVertexPosition  =  gl.getAttribLocation(postPrg, "aVertexPosition");
+    postPrg.aVertexNormal    =  gl.getAttribLocation(postPrg, "aVertexNormal");
+    postPrg.aTextureCoord =     gl.getAttribLocation(postPrg, "aTextureCoord");
+    
+    postPrg.uPMatrix         =  gl.getUniformLocation(postPrg, "uPMatrix");
+    postPrg.uMVMatrix        =  gl.getUniformLocation(postPrg, "uMVMatrix");
+    postPrg.uNMatrix         =  gl.getUniformLocation(postPrg, "uNMatrix");
+
+    postPrg.uMaterialDiffuse  = gl.getUniformLocation(postPrg, "uMaterialDiffuse");
+    postPrg.uLightDiffuse     = gl.getUniformLocation(postPrg, "uLightDiffuse");
+    postPrg.uLightDirection   = gl.getUniformLocation(postPrg, "uLightDirection");
+    
+    postPrg.uIsTextureEnabled = gl.getUniformLocation(postPrg, "uIsTextureEnabled");
+    postPrg.samplerUniform    = gl.getUniformLocation(postPrg, "uSampler");
+    
+    postPrg.uWaveAmount = gl.getUniformLocation(postPrg, "uWaveAmount");
+    postPrg.uBlurAmount = gl.getUniformLocation(postPrg, "uBlurAmount");
+    postPrg.uTime       = gl.getUniformLocation(postPrg, "uTime");
+    postPrg.uBW       = gl.getUniformLocation(postPrg, "uBW");
+    
     prg = gl.createProgram();
     gl.attachShader(prg, vertexShader);
     gl.attachShader(prg, fragmentShader);
@@ -260,7 +380,7 @@ function initProgram() {
 function initLights(){
     gl.uniform3fv(prg.uLightDirection,    [0.0, -1.0, -1.0]);
     gl.uniform4fv(prg.uLightDiffuse,      [1.0,1.0,1.0,1.0]); 
-    gl.uniform4fv(prg.uMaterialDiffuse,   [0.5,0.8,0.1,1.0]);
+    gl.uniform4fv(prg.uMaterialDiffuse,   [0.5,0.5,0.5,1.0]);
 }
 
 /**
@@ -462,7 +582,7 @@ function drawScene() {
 	// BEGINNING RENDERING TO FRAMEBUFFER 
 	/////////////////////////////////////////////////////////
     gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
-
+    gl.useProgram(prg);
     gl.clearColor(0.0, 0.0, 0.0, 1.0);//0.9,0.9,0.9, 1.0);
     
     gl.clearDepth(100.0);
@@ -491,7 +611,6 @@ function drawScene() {
          * DRAWING SCREEN (PLANE WITH VIDEO TEXTURE)
          */
 	    gl.enableVertexAttribArray(prg.aTextureCoord);
-		
 		
 		mat4.translate(mvMatrix, [-0.0, 0.65, 0.49]);
 		mat4.rotate(mvMatrix, 3.14*30/180, [0,1,0]);
@@ -684,7 +803,9 @@ function drawScene() {
 		// BEGINING DRAWING FRAMEBUFFER ON A PLANE
 		/////////////////////////////////////////////////////////
 		
-        
+		
+		
+        gl.useProgram(postPrg);
 		gl.clearColor(0.0, 0.0, 0.0, 1.0);//0.9,0.9,0.9, 1.0);
         gl.clearDepth(100.0);
         gl.enable(gl.DEPTH_TEST);
@@ -692,34 +813,38 @@ function drawScene() {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         //mat4.perspective(45, c_width / c_height, 0.1, 10000.0, pMatrix);
         gl.viewport(0, 0, c_width, c_height);
-        gl.enableVertexAttribArray(prg.aTextureCoord);
-        mvPushMatrix();
-        mat4.identity(mvMatrix);
-        mat4.translate(mvMatrix, [-0.2, 0.0, -2.0]); // Sets the camera to a reasonable distance to view the part
-        mat4.rotate(mvMatrix, 3.14, [0, 0, 1])
-        mat4.scale(mvMatrix, [2.0, 1.5, 1.0]);
+        gl.enableVertexAttribArray(postPrg.aTextureCoord);
+        
+        mat4.identity(postMatrix);
+        
+        gl.uniformMatrix4fv(postPrg.uMVMatrix, false, postMatrix);
+    	gl.uniformMatrix4fv(postPrg.uPMatrix, false, pMatrix);
+    	gl.uniform1f(postPrg.uTime, time);
+    	
+    	
+    	
         gl.bindBuffer(gl.ARRAY_BUFFER, screenVerticesBuffer);
-		gl.vertexAttribPointer(prg.aVertexPosition, 3, gl.FLOAT, false, 0, 0);
+		gl.vertexAttribPointer(postPrg.aVertexPosition, 3, gl.FLOAT, false, 0, 0);
 
 		gl.bindBuffer(gl.ARRAY_BUFFER, screenNormalsBuffer);
-		gl.vertexAttribPointer(prg.aVertexNormal,3,gl.FLOAT, false, 0,0);
+		gl.vertexAttribPointer(postPrg.aVertexNormal,3,gl.FLOAT, false, 0,0);
         
-        gl.uniform1i(prg.uIsTextureEnabled, true); 
+        gl.uniform1i(postPrg.uIsTextureEnabled, true); 
         
         gl.bindBuffer(gl.ARRAY_BUFFER, screenTextureCoordBuffer);
-        gl.vertexAttribPointer(prg.aTextureCoord, 2, gl.FLOAT, false, 0, 0);
+        gl.vertexAttribPointer(postPrg.aTextureCoord, 2, gl.FLOAT, false, 0, 0);
 
 		gl.bindTexture(gl.TEXTURE_2D, framebufferTexture);
 
-        gl.uniformMatrix4fv(prg.uMVMatrix, false, mvMatrix);
-    	gl.uniformMatrix4fv(prg.uPMatrix, false, pMatrix);
+        gl.uniformMatrix4fv(postPrg.uMVMatrix, false, mvMatrix);
+    	gl.uniformMatrix4fv(postPrg.uPMatrix, false, pMatrix);
         
 		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, screenIndicesBuffer);
 		gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT,0);
         
 		gl.bindBuffer(gl.ARRAY_BUFFER, null);
 		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-		mvPopMatrix();
+
 		gl.flush();
     }
     catch(err){
@@ -736,12 +861,14 @@ function drawScene() {
 function renderLoop() {
     requestAnimFrame(renderLoop);
     drawScene();
+    time += timeIncrement;
 }
 
 /**
 * Entry point. This function is invoked when the page is loaded
 */
 function runWebGLApp() {
+    
 	initAffineTransformationsArray();
     //Obtains a WebGL context
     gl = utils.getGLContext("canvas-element-id");
@@ -788,6 +915,11 @@ function runWebGLApp() {
     initPolaroidTexture03();
     initFramebuffer();
     
+    // Init Post Processing 
+    gl.useProgram(postPrg);
+    gl.uniform1f(postPrg.uBlurAmount, blurAmount);
+    gl.uniform1f(postPrg.uWaveAmount, waveAmount);
+    gl.uniform1i(postPrg.uBW, 0);
     //Renders the scene!
     renderLoop();
     
@@ -795,6 +927,19 @@ function runWebGLApp() {
     $("#canvas-element-id").mousemove(function( event ) {
       mouseX = event.pageX;
       mouseY = screen.height - event.pageY;
+    });
+    
+    $("#bw-value").click(function(){
+        bw = !bw;
+        updateBlackWhite(); 
+    });
+    
+    $("#play").click(function(){
+        video.play();
+    });
+    
+    $("#pause").click(function(){
+        video.pause();
     });
 }
 
@@ -850,18 +995,31 @@ function runWebGLApp() {
          <td id='slider-ld-value'  width='30px'>1.0</td>
          <td width='150px' colspan='3'><div id='slider-ld'/></td>
      </tr>
+     <tr>
+         <td align='right'>Wave Amount:</td>
+         <td id='slider-wave-value'  width='30px'>1.0</td>
+         <td width='150px' colspan='3'><div id='slider-wave'/></td>
+     </tr>
+     <tr>
+         <td align='right'>Black and White:</td>
+         <td  width='30px'><button id='bw-value'>Update</button></td>
+     </tr>
+     <tr>
+         <td align='right'>Video Playback:</td>
+         <td  width='30px'><button id='play'>Play</button></td>
+         <td  width='30px'><button id='pause'>Pause</button></td>
+     </tr>
     </table>
 </td>
 </tr>
 </table>
 </div>
-<script>cview.run(cview.MODE_VIEW_AND_CONTROLS);</script>
+<script>cview.run(cview.MODE_VIEW_AND_CODE);</script>
 
 <script>
 
-
-
 function updateLightDiffuseTerm(){
+ gl.useProgram(prg);
  var ld = $('#slider-ld').slider("value");
  gl.uniform4fv(prg.uLightDiffuse,[ld,ld,ld,1.0]);
  $('#slider-ld-value').html(ld);
@@ -869,8 +1027,32 @@ function updateLightDiffuseTerm(){
 
 $('#slider-ld').slider({value:1.0, min:-0.01, max:1.01, step:0.01, slide:updateLightDiffuseTerm});
 
+function updateBlur(){
+ gl.useProgram(postPrg);
+ var ba = $('#slider-blur').slider("value");
+ gl.uniform1f(postPrg.uBlurAmount, ba);
+ $('#slider-blur-value').html(ba);
+}
+
+$('#slider-blur').slider({value:1.0, min:1.0, max:5.00, step:0.1, slide:updateBlur});
+
+function updateBlackWhite(){
+ gl.useProgram(postPrg);
+ if (bw == 1) gl.uniform1i(postPrg.uBW, 1);
+ else gl.uniform1f(postPrg.uBW, 0);
+}
+
+function updateWave(){
+ gl.useProgram(postPrg);
+ var wa = $('#slider-wave').slider("value");
+ gl.uniform1f(postPrg.uWaveAmount, wa);
+ $('#slider-wave-value').html(wa);
+}
+
+$('#slider-wave').slider({value:1.0, min:1.0, max:5.00, step:0.1, slide:updateWave});
 
 function updateLightDirection(){
+   gl.useProgram(prg);
    var x = $('#slider-x').slider("value");
    var y = $('#slider-y').slider("value");
    var z = $('#slider-z').slider("value");
@@ -885,6 +1067,7 @@ $('#slider-y').slider({value:-1.0, min:-1.01, max:1.01, step:0.01, slide:updateL
 $('#slider-z').slider({value:-1.0, min:-1.01, max:1.01, step:0.01, slide:updateLightDirection});
 
 function updateObjectColor(r,g,b){
+    gl.useProgram(prg);
     gl.uniform4fv(prg.uMaterialDiffuse,[r,g,b,1.0]); 
 }
 
@@ -894,7 +1077,7 @@ $('#colorSelectorSphere').ColorPicker({
    $(el).ColorPickerHide();
    
  },
- color: '#00ff00',
+ color: '#555555',
     onShow: function (colpkr) {
         $(colpkr).fadeIn(500);
         return false;
@@ -911,7 +1094,7 @@ $('#colorSelectorSphere').ColorPicker({
     onBeforeShow: function (colpkr) {
    $(colpkr).ColorPickerSetColor('rgb(0.5,0.8,0.1)');
   }
- })
+ });
 
 </script>
 <audio id="audio" src="pics.mp3" preload="auto"></audio>
