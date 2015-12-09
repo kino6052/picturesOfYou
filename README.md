@@ -5,6 +5,7 @@ Kirill Novik CSCI 4229: Music Video for the Cure Song "Pictures of You" Made in 
 
 * Project source can be easily viewed here: https://ide.c9.io/kino6052/pictures_of_you
 * Result can be viewed here: https://pictures-of-you-kino6052.c9users.io/
+  * if you don't see the result, then you can clone this repo and run the index.html page
 
 ##### Project Layout
 Project Components:                                       (Attributions)
