@@ -595,8 +595,8 @@ function drawScene() {
     
     mat4.identity(mvMatrix);
     mat4.translate(mvMatrix, [0.0, -1.3, -3.0]); // Sets the camera to a reasonable distance to view the part
-    mat4.rotate(mvMatrix, -3.14*29/180 + mouseX/10000, [1, 0, 0]); // Camera rotates slightly based on where the mouse cursor is 
-    mat4.rotate(mvMatrix, mouseY/10000, [0, 1, 0]);
+    mat4.rotate(mvMatrix, -3.14*29/180 + mouseY/10000, [1, 0, 0]); // Camera rotates slightly based on where the mouse cursor is 
+    mat4.rotate(mvMatrix, mouseX/10000, [0, 1, 0]);
     
     try{
         gl.enableVertexAttribArray(prg.aVertexPosition);
