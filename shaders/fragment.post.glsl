@@ -45,9 +45,18 @@ void main(void) {
     frameColor += offsetLookup(3.0, 0.0) * 0.09 * uBlurAmount;
     frameColor += offsetLookup(4.0, 0.0) * 0.05 * uBlurAmount;
 
-    // Apply wave distortion
+    // Apply radial wave distortion
     vec2 texcoord = vTextureCoord;
-    texcoord.x += sin(texcoord.y * 4.0 * 2.0 * 3.14159 * uWaveAmount + uTime) / 100.0;
+    vec2 center = vec2(0.5, 0.5); // Center of the screen
+    vec2 toCenter = texcoord - center;
+    float dist = length(toCenter);
+    float angle = atan(toCenter.y, toCenter.x);
+    
+    // Create expanding circular waves
+    float wave = sin(dist * 20.0 * uWaveAmount - uTime * 2.0) * 0.02;
+    
+    // Apply distortion along the radial direction
+    texcoord = center + toCenter * (1.0 + wave);
     
     // Combine effects with noise
     vec4 fragment = (texture2D(uSampler, texcoord) + frameColor)/2.0 + rand(vTextureCoord + mod(uTime, 10.0))/5.0;
