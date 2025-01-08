@@ -1,27 +1,3 @@
-/**
- * Helper function to bind buffers and set up attributes.
- */
-function bindBuffersAndAttributes({
-  positionBuffer,
-  normalBuffer,
-  textureCoordBuffer,
-  program,
-}) {
-  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-  gl.vertexAttribPointer(program.aVertexPosition, 3, gl.FLOAT, false, 0, 0);
-  gl.enableVertexAttribArray(program.aVertexPosition);
-
-  gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
-  gl.vertexAttribPointer(program.aVertexNormal, 3, gl.FLOAT, false, 0, 0);
-  gl.enableVertexAttribArray(program.aVertexNormal);
-
-  if (textureCoordBuffer) {
-    gl.bindBuffer(gl.ARRAY_BUFFER, textureCoordBuffer);
-    gl.vertexAttribPointer(program.aTextureCoord, 2, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(program.aTextureCoord);
-  }
-}
-
 /*
  * INITIALIZE LIGHTS
  * Description:
@@ -53,19 +29,14 @@ function setupViewMatrix() {
   mat4.rotate(mvMatrix, mouseX / 10000, [0, 1, 0]);
 }
 
-function drawVideoScreen() {
+function setupVideoScreenTransform() {
   mvPushMatrix();
   mat4.translate(mvMatrix, [-0.0, 0.65, 0.49]);
   mat4.rotate(mvMatrix, (3.14 * 30) / 180, [0, 1, 0]);
   mat4.scale(mvMatrix, [1.4, 0.95, 0.0]);
+}
 
-  bindBuffersAndAttributes({
-    positionBuffer: screenVerticesBuffer,
-    normalBuffer: screenNormalsBuffer,
-    textureCoordBuffer: screenTextureCoordBuffer,
-    program: prg,
-  });
-
+function setupVideoTexture() {
   gl.uniform1i(prg.uIsTextureEnabled, true);
 
   if (videoTexture) {
@@ -75,27 +46,27 @@ function drawVideoScreen() {
   if (videoready) {
     try {
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, video);
-    } catch (e) { }
+    } catch (e) {}
   }
+}
 
+function renderVideoScreen() {
   gl.uniformMatrix4fv(prg.uMVMatrix, false, mvMatrix);
   gl.uniformMatrix4fv(prg.uPMatrix, false, pMatrix);
 
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, screenIndicesBuffer);
   gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
+}
 
+function cleanupVideoScreen() {
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-
   mvPopMatrix();
   gl.bindTexture(gl.TEXTURE_2D, null);
 }
 
-function drawBackground() {
-  mvPushMatrix();
-  mat4.translate(mvMatrix, [0, 4, -4]);
-  mat4.rotate(mvMatrix, (3.14 * 29) / 180, [1, 0, 0]);
-  mat4.scale(mvMatrix, [20, 10, 10]);
+function drawVideoScreen() {
+  setupVideoScreenTransform();
 
   bindBuffersAndAttributes({
     positionBuffer: screenVerticesBuffer,
@@ -104,8 +75,20 @@ function drawBackground() {
     program: prg,
   });
 
-  gl.uniform1i(prg.uIsTextureEnabled, true);
+  setupVideoTexture();
+  renderVideoScreen();
+  cleanupVideoScreen();
+}
 
+function setupBackgroundTransform() {
+  mvPushMatrix();
+  mat4.translate(mvMatrix, [0, 4, -4]);
+  mat4.rotate(mvMatrix, (3.14 * 29) / 180, [1, 0, 0]);
+  mat4.scale(mvMatrix, [20, 10, 10]);
+}
+
+function setupBackgroundTexture() {
+  gl.uniform1i(prg.uIsTextureEnabled, true);
   gl.bindTexture(gl.TEXTURE_2D, backgroundTexture);
   gl.texImage2D(
     gl.TEXTURE_2D,
@@ -115,18 +98,36 @@ function drawBackground() {
     gl.UNSIGNED_BYTE,
     backgroundTexture.image
   );
+}
 
+function renderBackground() {
   gl.uniformMatrix4fv(prg.uMVMatrix, false, mvMatrix);
   gl.uniformMatrix4fv(prg.uPMatrix, false, pMatrix);
 
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, screenIndicesBuffer);
   gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
+}
 
+function cleanupBackground() {
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-
   mvPopMatrix();
   gl.bindTexture(gl.TEXTURE_2D, null);
+}
+
+function drawBackground() {
+  setupBackgroundTransform();
+
+  bindBuffersAndAttributes({
+    positionBuffer: screenVerticesBuffer,
+    normalBuffer: screenNormalsBuffer,
+    textureCoordBuffer: screenTextureCoordBuffer,
+    program: prg,
+  });
+
+  setupBackgroundTexture();
+  renderBackground();
+  cleanupBackground();
 }
 
 function setupRainTexture(texture) {
@@ -148,36 +149,48 @@ function setupRainTexture(texture) {
   gl.generateMipmap(gl.TEXTURE_2D);
 }
 
+function applyTransformations(transformations) {
+  mvPushMatrix();
+  mat4.translate(mvMatrix, [
+    transformations[3],
+    transformations[4],
+    transformations[5],
+  ]);
+  mat4.rotate(mvMatrix, transformations[0], [1, 0, 0]);
+  mat4.rotate(mvMatrix, transformations[1], [0, 1, 0]);
+  mat4.rotate(mvMatrix, transformations[2], [0, 0, 1]);
+  mat4.scale(mvMatrix, [0.3, 0.3, 0.3]);
+}
+
+function setupRainDropletBuffers() {
+  bindBuffersAndAttributes({
+    positionBuffer: screenVerticesBuffer,
+    normalBuffer: screenNormalsBuffer,
+    textureCoordBuffer: screenTextureCoordBuffer,
+    program: prg,
+  });
+}
+
+function renderRainDroplet() {
+  gl.uniformMatrix4fv(prg.uMVMatrix, false, mvMatrix);
+  gl.uniformMatrix4fv(prg.uPMatrix, false, pMatrix);
+
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, screenIndicesBuffer);
+  gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
+}
+
+function cleanupRainDroplet() {
+  gl.bindBuffer(gl.ARRAY_BUFFER, null);
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+  mvPopMatrix();
+}
+
 function drawRainDroplets(startIndex, endIndex) {
   for (let i = startIndex; i < endIndex; i++) {
-    mvPushMatrix();
-    mat4.translate(mvMatrix, [
-      affineTransformationsArray[i][3],
-      affineTransformationsArray[i][4],
-      affineTransformationsArray[i][5],
-    ]);
-    mat4.rotate(mvMatrix, affineTransformationsArray[i][0], [1, 0, 0]);
-    mat4.rotate(mvMatrix, affineTransformationsArray[i][1], [0, 1, 0]);
-    mat4.rotate(mvMatrix, affineTransformationsArray[i][2], [0, 0, 1]);
-    mat4.scale(mvMatrix, [0.3, 0.3, 0.3]);
-
-    bindBuffersAndAttributes({
-      positionBuffer: screenVerticesBuffer,
-      normalBuffer: screenNormalsBuffer,
-      textureCoordBuffer: screenTextureCoordBuffer,
-      program: prg,
-    });
-
-    gl.uniformMatrix4fv(prg.uMVMatrix, false, mvMatrix);
-    gl.uniformMatrix4fv(prg.uPMatrix, false, pMatrix);
-
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, screenIndicesBuffer);
-    gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, null);
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-
-    mvPopMatrix();
+    applyTransformations(affineTransformationsArray[i]);
+    setupRainDropletBuffers();
+    renderRainDroplet();
+    cleanupRainDroplet();
   }
 }
 
@@ -190,40 +203,58 @@ function drawRainEffect() {
   drawRainDroplets(dropletQuantity / 4, dropletQuantity / 2);
   gl.bindTexture(gl.TEXTURE_2D, null);
 }
-
-function drawTVModel() {
-  gl.disableVertexAttribArray(prg.aTextureCoord);
+function setupTVModelTransformations() {
   mvPushMatrix();
   mat4.translate(mvMatrix, [0, 0, 0]);
   mat4.rotate(mvMatrix, (3.14 * 30) / 180, [0, 1, 0]);
   mat4.scale(mvMatrix, [0.6, 0.6, 0.6]);
+}
+
+function setupTVModelBuffers() {
+  gl.disableVertexAttribArray(prg.aTextureCoord);
 
   gl.bindBuffer(gl.ARRAY_BUFFER, verticesBuffer);
   gl.vertexAttribPointer(prg.aVertexPosition, 3, gl.FLOAT, false, 0, 0);
 
   gl.bindBuffer(gl.ARRAY_BUFFER, tvNormalsBuffer);
   gl.vertexAttribPointer(prg.aVertexNormal, 3, gl.FLOAT, false, 0, 0);
+}
 
+function setupTVModelUniforms() {
   gl.uniformMatrix4fv(prg.uMVMatrix, false, mvMatrix);
   gl.uniformMatrix4fv(prg.uPMatrix, false, pMatrix);
-
   gl.uniform1i(prg.uIsTextureEnabled, false);
+}
+
+function renderTVModel() {
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indicesBuffer);
   gl.drawElements(gl.TRIANGLES, tv.indices.length, gl.UNSIGNED_SHORT, 0);
+}
 
+function cleanupTVModel() {
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+}
 
+function updateNormalMatrix() {
   mat4.set(mvMatrix, nMatrix);
   mat4.inverse(nMatrix);
   mat4.transpose(nMatrix);
-
   gl.uniformMatrix4fv(prg.uNMatrix, false, nMatrix);
+}
+
+function drawTVModel() {
+  setupTVModelTransformations();
+  setupTVModelBuffers();
+  setupTVModelUniforms();
+  renderTVModel();
+  cleanupTVModel();
+  updateNormalMatrix();
+
   gl.flush();
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 }
-
-function applyPostProcessing() {
+function setupPostProcessingState() {
   gl.useProgram(postPrg);
   gl.clearColor(0.0, 0.0, 0.0, 1.0);
   gl.clearDepth(100.0);
@@ -232,36 +263,51 @@ function applyPostProcessing() {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   gl.viewport(0, 0, c_width, c_height);
   gl.enableVertexAttribArray(postPrg.aTextureCoord);
+}
 
+function setupPostProcessingMatrices() {
   mat4.identity(postMatrix);
-
   gl.uniformMatrix4fv(postPrg.uMVMatrix, false, postMatrix);
   gl.uniformMatrix4fv(postPrg.uPMatrix, false, pMatrix);
   gl.uniform1f(postPrg.uTime, time);
+}
 
+function setupPostProcessingBuffers() {
   gl.bindBuffer(gl.ARRAY_BUFFER, screenVerticesBuffer);
   gl.vertexAttribPointer(postPrg.aVertexPosition, 3, gl.FLOAT, false, 0, 0);
 
   gl.bindBuffer(gl.ARRAY_BUFFER, screenNormalsBuffer);
   gl.vertexAttribPointer(postPrg.aVertexNormal, 3, gl.FLOAT, false, 0, 0);
 
-  gl.uniform1i(postPrg.uIsTextureEnabled, true);
-
   gl.bindBuffer(gl.ARRAY_BUFFER, screenTextureCoordBuffer);
   gl.vertexAttribPointer(postPrg.aTextureCoord, 2, gl.FLOAT, false, 0, 0);
+}
 
+function setupPostProcessingTextures() {
+  gl.uniform1i(postPrg.uIsTextureEnabled, true);
   gl.bindTexture(gl.TEXTURE_2D, framebufferTexture);
-
   gl.uniformMatrix4fv(postPrg.uMVMatrix, false, mvMatrix);
   gl.uniformMatrix4fv(postPrg.uPMatrix, false, pMatrix);
+}
 
+function renderPostProcessing() {
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, screenIndicesBuffer);
   gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
+}
 
+function cleanupPostProcessing() {
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-
   gl.flush();
+}
+
+function applyPostProcessing() {
+  setupPostProcessingState();
+  setupPostProcessingMatrices();
+  setupPostProcessingBuffers();
+  setupPostProcessingTextures();
+  renderPostProcessing();
+  cleanupPostProcessing();
 }
 
 /**
