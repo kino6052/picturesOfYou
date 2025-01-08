@@ -1,15 +1,16 @@
-// droplets
-var dropletQuantity = 100;
-var speed = 0.01;
-var rotationSpeed = 0.01;
-var spread = 3000;
+const video = document.createElement("video");
+let videoready = false;
+
+const dropletsConfig = {
+  dropletQuantity: 100,
+  speed: 0.01,
+  rotationSpeed: 0.01,
+  spread: 3000,
+};
 
 /* POST PROCESSING */
-var framebuffer;
+
 var renderbuffer;
-var blurAmount = 1.0;
-var waveAmount = 1.0;
-var bw = 0;
 
 /*
  * INITIALIZE LIGHTS
@@ -21,18 +22,6 @@ function initLightsWithContext(glContext, program) {
   glContext.uniform3fv(program.uLightDirection, [0.0, -1.0, -1.0]);
   glContext.uniform4fv(program.uLightDiffuse, [1.0, 1.0, 1.0, 1.0]);
   glContext.uniform4fv(program.uMaterialDiffuse, [0.5, 0.5, 0.5, 1.0]);
-}
-
-function initializeFramebuffer() {
-  gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
-  gl.useProgram(prg);
-  gl.clearColor(0.0, 0.0, 0.0, 1.0);
-  gl.clearDepth(100.0);
-  gl.enable(gl.DEPTH_TEST);
-  gl.depthFunc(gl.LEQUAL);
-  gl.viewport(0, 0, 2048, 2048);
-  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-  mat4.perspective(45, 2048 / 2048, 0.1, 10000.0, pMatrix);
 }
 
 function setupViewMatrix() {
@@ -209,11 +198,14 @@ function drawRainDroplets(startIndex, endIndex) {
 
 function drawRainEffect() {
   setupRainTexture(polaroidTexture00);
-  drawRainDroplets(0, dropletQuantity / 4);
+  drawRainDroplets(0, dropletsConfig.dropletQuantity / 4);
   gl.bindTexture(gl.TEXTURE_2D, null);
 
   setupRainTexture(polaroidTexture01);
-  drawRainDroplets(dropletQuantity / 4, dropletQuantity / 2);
+  drawRainDroplets(
+    dropletsConfig.dropletQuantity / 4,
+    dropletsConfig.dropletQuantity / 2
+  );
   gl.bindTexture(gl.TEXTURE_2D, null);
 }
 function setupTVModelTransformations() {
@@ -342,7 +334,7 @@ function drawScene() {
 
   updateAffineTransformationsArray(
     affineTransformationsArray,
-    rotationSpeed,
-    speed
+    dropletsConfig.rotationSpeed,
+    dropletsConfig.speed
   );
 }

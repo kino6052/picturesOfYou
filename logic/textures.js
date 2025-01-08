@@ -1,3 +1,12 @@
+/* TEXTURE OPERATIONS */
+var videoTexture;
+var backgroundTexture;
+var polaroidTexture00;
+var polaroidTexture01;
+var polaroidTexture02;
+var polaroidTexture03;
+var framebufferTexture;
+
 function handleLoadedTexture(gl, texture) {
   gl.bindTexture(gl.TEXTURE_2D, texture);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);

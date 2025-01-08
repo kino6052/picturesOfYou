@@ -1,3 +1,12 @@
+let verticesBuffer;
+let indicesBuffer;
+let screenVerticesBuffer;
+let screenIndicesBuffer;
+let screenNormalsBuffer;
+let textureCoords;
+let tvNormalsBuffer; //VBO for Normals
+let screenTextureCoordBuffer;
+
 /**
  * This function generates SPHERE data and creates the buffers
  */

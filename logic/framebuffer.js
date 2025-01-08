@@ -1,3 +1,5 @@
+let framebuffer;
+
 // Helper function to create and configure a texture
 const createTexture = (gl, width, height) => {
   const texture = gl.createTexture();
@@ -71,6 +73,17 @@ const checkFramebufferComplete = (gl) => {
   }
 };
 
+function initializeFramebuffer() {
+  gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+  gl.useProgram(prg);
+  gl.clearColor(0.0, 0.0, 0.0, 1.0);
+  gl.clearDepth(100.0);
+  gl.enable(gl.DEPTH_TEST);
+  gl.depthFunc(gl.LEQUAL);
+  gl.viewport(0, 0, 2048, 2048);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  mat4.perspective(45, 2048 / 2048, 0.1, 10000.0, pMatrix);
+}
 
 // Main function to initialize the framebuffer and assign global variables
 function initFramebuffer(gl, width = 2048, height = 2048) {

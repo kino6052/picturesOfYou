@@ -18,8 +18,8 @@ function runWebGLApp() {
 function initializeWebGLContext() {
   initAffineTransformationsArray(
     affineTransformationsArray,
-    dropletQuantity,
-    spread
+    dropletsConfig.dropletQuantity,
+    dropletsConfig.spread
   );
   gl = utils.getGLContext("canvas-element-id");
 }
@@ -83,36 +83,8 @@ function initializeTexturesAndFramebuffers() {
 }
 
 /**
- * Sets up post-processing effects.
- */
-function setupPostProcessing() {
-  gl.useProgram(postPrg);
-  gl.uniform1f(postPrg.uBlurAmount, blurAmount);
-  gl.uniform1f(postPrg.uWaveAmount, waveAmount);
-  gl.uniform1i(postPrg.uBW, 0);
-}
-
-/**
  * Starts the rendering loop.
  */
 function startRenderingLoop() {
   renderLoop();
-}
-
-/**
- * Sets up event handlers for mouse and button interactions.
- */
-function setupEventHandlers() {
-  $("#canvas-element-id").mousemove((event) => {
-    mouseX = event.pageX;
-    mouseY = screen.height - event.pageY;
-  });
-
-  $("#bw-value").click(() => {
-    bw = !bw;
-    updateBlackWhite();
-  });
-
-  $("#play").click(() => video.play());
-  $("#pause").click(() => video.pause());
 }

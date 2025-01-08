@@ -1,3 +1,7 @@
+/* MOUSE INTERACTION */
+var mouseX = 0;
+var mouseY = 0;
+
 /**
  * Sets up event handlers for mouse and button interactions.
  */
