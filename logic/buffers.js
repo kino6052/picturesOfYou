@@ -1,4 +1,3 @@
-
 /**
  * This function generates SPHERE data and creates the buffers
  */
@@ -6,10 +5,13 @@ function initBuffersWithContext(glContext, program, tvModel) {
   const buffers = {
     screenVertices: [-0.5, -0.5, 0, 0.5, -0.5, 0, -0.5, 0.5, 0, 0.5, 0.5, 0],
     screenIndices: [0, 2, 1, 1, 2, 3],
-    textureCoords: [0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0]
+    textureCoords: [0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0],
   };
 
-  buffers.screenNormals = utils.calculateNormals(buffers.screenVertices, buffers.screenIndices);
+  buffers.screenNormals = utils.calculateNormals(
+    buffers.screenVertices,
+    buffers.screenIndices
+  );
   buffers.normals = utils.calculateNormals(tvModel.vertices, tvModel.indices);
 
   // Vertex Buffer for the Plane with Video Texture
@@ -53,12 +55,20 @@ function initBuffersWithContext(glContext, program, tvModel) {
   // Vertex Buffer for the TV Object
   verticesBuffer = glContext.createBuffer();
   glContext.bindBuffer(glContext.ARRAY_BUFFER, verticesBuffer);
-  glContext.bufferData(glContext.ARRAY_BUFFER, new Float32Array(tvModel.vertices), glContext.STATIC_DRAW);
+  glContext.bufferData(
+    glContext.ARRAY_BUFFER,
+    new Float32Array(tvModel.vertices),
+    glContext.STATIC_DRAW
+  );
 
   // Normals Buffer for the TV Object
   tvNormalsBuffer = glContext.createBuffer();
   glContext.bindBuffer(glContext.ARRAY_BUFFER, tvNormalsBuffer);
-  glContext.bufferData(glContext.ARRAY_BUFFER, new Float32Array(buffers.normals), glContext.STATIC_DRAW);
+  glContext.bufferData(
+    glContext.ARRAY_BUFFER,
+    new Float32Array(buffers.normals),
+    glContext.STATIC_DRAW
+  );
 
   // Indices Buffer for the TV Object
   indicesBuffer = glContext.createBuffer();
@@ -72,3 +82,24 @@ function initBuffersWithContext(glContext, program, tvModel) {
   return buffers;
 }
 
+// Buffer binding helper
+function bindBuffersAndAttributes({
+  positionBuffer,
+  normalBuffer,
+  textureCoordBuffer,
+  program,
+}) {
+  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+  gl.vertexAttribPointer(program.aVertexPosition, 3, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(program.aVertexPosition);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+  gl.vertexAttribPointer(program.aVertexNormal, 3, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(program.aVertexNormal);
+
+  if (textureCoordBuffer) {
+    gl.bindBuffer(gl.ARRAY_BUFFER, textureCoordBuffer);
+    gl.vertexAttribPointer(program.aTextureCoord, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(program.aTextureCoord);
+  }
+}
