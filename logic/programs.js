@@ -1,3 +1,8 @@
+function initProgram() {
+  const programs = initProgramWithContext(gl);
+  prg = programs.prg;
+  postPrg = programs.postPrg;
+}
 
 /**
  * Creates and initializes WebGL shader programs.
@@ -5,37 +10,53 @@
  */
 function createPrograms(glContext, shaders) {
   const programs = {
-    postPrg: initShaderProgram(glContext, shaders.postVertexShader, shaders.postShader),
-    prg: initShaderProgram(glContext, shaders.vertexShader, shaders.fragmentShader)
+    postPrg: initShaderProgram(
+      glContext,
+      shaders.postVertexShader,
+      shaders.postShader
+    ),
+    prg: initShaderProgram(
+      glContext,
+      shaders.vertexShader,
+      shaders.fragmentShader
+    ),
   };
 
   // Set up attribute and uniform locations for both programs
-  const attributes = ['aVertexPosition', 'aVertexNormal', 'aTextureCoord'];
+  const attributes = ["aVertexPosition", "aVertexNormal", "aTextureCoord"];
   const uniforms = [
-    'uPMatrix', 'uMVMatrix', 'uNMatrix',
-    'uMaterialDiffuse', 'uLightDiffuse', 'uLightDirection',
-    'uIsTextureEnabled', 'samplerUniform'
+    "uPMatrix",
+    "uMVMatrix",
+    "uNMatrix",
+    "uMaterialDiffuse",
+    "uLightDiffuse",
+    "uLightDirection",
+    "uIsTextureEnabled",
+    "samplerUniform",
   ];
 
   // Additional uniforms for post-processing program
-  const postUniforms = ['uWaveAmount', 'uBlurAmount', 'uTime', 'uBW'];
+  const postUniforms = ["uWaveAmount", "uBlurAmount", "uTime", "uBW"];
 
   // Set up locations for both programs
   for (const program of [programs.postPrg, programs.prg]) {
     // Set attribute locations
-    attributes.forEach(attr => {
+    attributes.forEach((attr) => {
       program[attr] = glContext.getAttribLocation(program, attr);
     });
 
     // Set uniform locations
-    uniforms.forEach(uniform => {
+    uniforms.forEach((uniform) => {
       program[uniform] = glContext.getUniformLocation(program, uniform);
     });
   }
 
   // Set additional post-processing uniforms
-  postUniforms.forEach(uniform => {
-    programs.postPrg[uniform] = glContext.getUniformLocation(programs.postPrg, uniform);
+  postUniforms.forEach((uniform) => {
+    programs.postPrg[uniform] = glContext.getUniformLocation(
+      programs.postPrg,
+      uniform
+    );
   });
 
   // Set main program as active
@@ -54,7 +75,7 @@ function initShaderProgram(gl, vertexShader, fragmentShader) {
   gl.linkProgram(program);
 
   if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-    throw new Error('Failed to initialize shader program');
+    throw new Error("Failed to initialize shader program");
   }
 
   return program;
@@ -70,7 +91,7 @@ function initProgramWithContext(glContext) {
     fragmentShader: utils.getShader(glContext, "shader-fs"),
     vertexShader: utils.getShader(glContext, "shader-vs"),
     postVertexShader: utils.getShader(glContext, "shader-post-vs"),
-    postShader: utils.getShader(glContext, "shader-post-fs")
+    postShader: utils.getShader(glContext, "shader-post-fs"),
   };
 
   return createPrograms(glContext, shaders);

@@ -7,20 +7,6 @@ function renderLoopWithDeps(drawSceneFn, animFrameFn, timeState) {
   timeState.time += timeState.timeIncrement;
 }
 
-function initProgram() {
-  const programs = initProgramWithContext(gl);
-  prg = programs.prg;
-  postPrg = programs.postPrg;
-}
-
-function initLights() {
-  initLightsWithContext(gl, prg);
-}
-
-function initBuffers() {
-  initBuffersWithContext(gl, prg, tv);
-}
-
 function renderLoop() {
   renderLoopWithDeps(drawScene, utils.requestAnimFrame, {
     time,

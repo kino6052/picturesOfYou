@@ -7,6 +7,15 @@ var polaroidTexture02;
 var polaroidTexture03;
 var framebufferTexture;
 
+function intializeTextures() {
+  initTexture(gl, window);
+  initBackgroundTexture(gl, window);
+  initPolaroidTexture00(gl, window);
+  initPolaroidTexture01(gl, window);
+  initPolaroidTexture02(gl, window);
+  initPolaroidTexture03(gl, window);
+}
+
 function handleLoadedTexture(gl, texture) {
   gl.bindTexture(gl.TEXTURE_2D, texture);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
