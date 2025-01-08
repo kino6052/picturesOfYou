@@ -63,84 +63,10 @@ var polaroidTexture02;
 var polaroidTexture03;
 var framebufferTexture;
 
-/**
- * The program contains a series of instructions that tell the Graphic Processing Unit (GPU)
- * what to do with every vertex and fragment that we pass it.
- * The vertex shader and the fragment shader together are called the program.
- */
-function initProgramWithContext(glContext) {
-  var fragmentShader = utils.getShader(glContext, "shader-fs");
-  var vertexShader = utils.getShader(glContext, "shader-vs");
-  var postVertexShader = utils.getShader(glContext, "shader-post-vs");
-  var postShader = utils.getShader(glContext, "shader-post-fs");
+/* MATRIX OPERATIONS */
+var mvMatrixStack = [];
 
-  const programs = {
-    postPrg: glContext.createProgram(),
-    prg: glContext.createProgram()
-  };
 
-  // Initialize post program
-  glContext.attachShader(programs.postPrg, postVertexShader);
-  glContext.attachShader(programs.postPrg, postShader);
-  glContext.linkProgram(programs.postPrg);
-
-  if (!glContext.getProgramParameter(programs.postPrg, glContext.LINK_STATUS)) {
-    throw new Error("Could not initialise post shaders");
-  }
-
-  // Locations of Various Resources that "prg" will be Using
-  programs.postPrg.aVertexPosition = glContext.getAttribLocation(programs.postPrg, "aVertexPosition");
-  programs.postPrg.aVertexNormal = glContext.getAttribLocation(programs.postPrg, "aVertexNormal");
-  programs.postPrg.aTextureCoord = glContext.getAttribLocation(programs.postPrg, "aTextureCoord");
-
-  programs.postPrg.uPMatrix = glContext.getUniformLocation(programs.postPrg, "uPMatrix");
-  programs.postPrg.uMVMatrix = glContext.getUniformLocation(programs.postPrg, "uMVMatrix");
-  programs.postPrg.uNMatrix = glContext.getUniformLocation(programs.postPrg, "uNMatrix");
-
-  programs.postPrg.uMaterialDiffuse = glContext.getUniformLocation(programs.postPrg, "uMaterialDiffuse");
-  programs.postPrg.uLightDiffuse = glContext.getUniformLocation(programs.postPrg, "uLightDiffuse");
-  programs.postPrg.uLightDirection = glContext.getUniformLocation(programs.postPrg, "uLightDirection");
-
-  programs.postPrg.uIsTextureEnabled = glContext.getUniformLocation(
-    programs.postPrg,
-    "uIsTextureEnabled"
-  );
-  programs.postPrg.samplerUniform = glContext.getUniformLocation(programs.postPrg, "uSampler");
-
-  programs.postPrg.uWaveAmount = glContext.getUniformLocation(programs.postPrg, "uWaveAmount");
-  programs.postPrg.uBlurAmount = glContext.getUniformLocation(programs.postPrg, "uBlurAmount");
-  programs.postPrg.uTime = glContext.getUniformLocation(programs.postPrg, "uTime");
-  programs.postPrg.uBW = glContext.getUniformLocation(programs.postPrg, "uBW");
-
-  // Initialize main program
-  glContext.attachShader(programs.prg, vertexShader);
-  glContext.attachShader(programs.prg, fragmentShader);
-  glContext.linkProgram(programs.prg);
-
-  if (!glContext.getProgramParameter(programs.prg, glContext.LINK_STATUS)) {
-    throw new Error("Could not initialise main shaders");
-  }
-
-  glContext.useProgram(programs.prg);
-
-  // Locations of Various Resources that "prg" will be Using
-  programs.prg.aVertexPosition = glContext.getAttribLocation(programs.prg, "aVertexPosition");
-  programs.prg.aVertexNormal = glContext.getAttribLocation(programs.prg, "aVertexNormal");
-  programs.prg.aTextureCoord = glContext.getAttribLocation(programs.prg, "aTextureCoord");
-
-  programs.prg.uPMatrix = glContext.getUniformLocation(programs.prg, "uPMatrix");
-  programs.prg.uMVMatrix = glContext.getUniformLocation(programs.prg, "uMVMatrix");
-  programs.prg.uNMatrix = glContext.getUniformLocation(programs.prg, "uNMatrix");
-
-  programs.prg.uMaterialDiffuse = glContext.getUniformLocation(programs.prg, "uMaterialDiffuse");
-  programs.prg.uLightDiffuse = glContext.getUniformLocation(programs.prg, "uLightDiffuse");
-  programs.prg.uLightDirection = glContext.getUniformLocation(programs.prg, "uLightDirection");
-
-  programs.prg.uIsTextureEnabled = glContext.getUniformLocation(programs.prg, "uIsTextureEnabled");
-  programs.prg.samplerUniform = glContext.getUniformLocation(programs.prg, "uSampler");
-
-  return programs;
-}
 
 /*
  * INITIALIZE LIGHTS
@@ -227,29 +153,6 @@ function initBuffersWithContext(glContext, program, tvModel) {
   return buffers;
 }
 
-/* MATRIX OPERATIONS */
-var mvMatrixStack = [];
-
-function mvPushMatrix() {
-  mvMatrixStack.push(mvPushMatrixWithState(mvMatrix));
-}
-
-function mvPopMatrix() {
-  mvMatrix = mvPopMatrixWithStack(mvMatrixStack);
-}
-
-function mvPushMatrixWithState(matrix) {
-  var copy = mat4.create();
-  mat4.set(matrix, copy);
-  return copy;
-}
-
-function mvPopMatrixWithStack(stack) {
-  if (stack.length == 0) {
-    throw "Invalid popMatrix!";
-  }
-  return stack.pop();
-}
 
 // Main function to initialize the framebuffer and assign global variables
 function initFramebuffer(gl, width = 2048, height = 2048) {

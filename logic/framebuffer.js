@@ -70,3 +70,37 @@ const checkFramebufferComplete = (gl) => {
     throw new Error(`Framebuffer is incomplete: ${status}`);
   }
 };
+
+
+// Main function to initialize the framebuffer and assign global variables
+function initFramebuffer(gl, width = 2048, height = 2048) {
+  if (!gl) {
+    throw new Error("WebGL context is required");
+  }
+
+  // 1. Initialize Color Texture
+  framebufferTexture = createTexture(gl, width, height);
+
+  // 2. Initialize Render Buffer (Depth Buffer)
+  renderbuffer = createRenderbuffer(gl, width, height);
+
+  // 3. Initialize and Set Up Frame Buffer
+  framebuffer = createFramebuffer(gl, framebufferTexture, renderbuffer);
+
+  // 4. Check if framebuffer is complete
+  checkFramebufferComplete(gl);
+
+  // Clean up bindings
+  gl.bindTexture(gl.TEXTURE_2D, null);
+  gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.bindBuffer(gl.ARRAY_BUFFER, null);
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+
+  // Assign to global variables
+  framebufferTexture = framebufferTexture;
+  renderbuffer = renderbuffer;
+  framebuffer = framebuffer;
+
+  return true;
+}

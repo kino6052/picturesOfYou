@@ -22,6 +22,18 @@ function bindBuffersAndAttributes({
   }
 }
 
+/*
+ * INITIALIZE LIGHTS
+ * Description:
+ * Pass direction, diffuse color, and material diffuse
+ * to the GPU
+ */
+function initLightsWithContext(glContext, program) {
+  glContext.uniform3fv(program.uLightDirection, [0.0, -1.0, -1.0]);
+  glContext.uniform4fv(program.uLightDiffuse, [1.0, 1.0, 1.0, 1.0]);
+  glContext.uniform4fv(program.uMaterialDiffuse, [0.5, 0.5, 0.5, 1.0]);
+}
+
 function initializeFramebuffer() {
   gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
   gl.useProgram(prg);
@@ -63,7 +75,7 @@ function drawVideoScreen() {
   if (videoready) {
     try {
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, video);
-    } catch (e) {}
+    } catch (e) { }
   }
 
   gl.uniformMatrix4fv(prg.uMVMatrix, false, mvMatrix);
