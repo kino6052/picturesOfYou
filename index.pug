@@ -1,0 +1,27 @@
+extends layouts/main
+
+include components/header
+include components/canvas
+include components/controls
+
+block styles
+  include includes/styles
+
+block scripts
+  include includes/scripts
+
+block content
+  +header
+  +canvas
+  #bottom
+    table
+      tr
+        td
+          +lightControls
+        td
+          +visualControls
+
+block footer-scripts
+  script.
+    cview.run(cview.MODE_VIEW_AND_CODE);
+  script(src="./ui.js")
