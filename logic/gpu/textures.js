@@ -6,15 +6,6 @@ var polaroidTexture01;
 var polaroidTexture02;
 var polaroidTexture03;
 
-function intializeTextures() {
-  initTexture(gl, window);
-  initBackgroundTexture(gl, window);
-  initPolaroidTexture00(gl, window);
-  initPolaroidTexture01(gl, window);
-  initPolaroidTexture02(gl, window);
-  initPolaroidTexture03(gl, window);
-}
-
 function handleLoadedTexture(gl, texture) {
   gl.bindTexture(gl.TEXTURE_2D, texture);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
@@ -25,60 +16,27 @@ function handleLoadedTexture(gl, texture) {
   gl.bindTexture(gl.TEXTURE_2D, null);
 }
 
-function initBackgroundTexture(gl, object) {
-  object.backgroundTexture = gl.createTexture();
-  object.backgroundTexture.image = new Image();
-  object.backgroundTexture.image.onload = function () {
-    handleLoadedTexture(gl, object.backgroundTexture);
+function loadImageTexture(gl, object, textureName, imagePath) {
+  object[textureName] = gl.createTexture();
+  object[textureName].image = new Image();
+  object[textureName].image.onload = function () {
+    handleLoadedTexture(gl, object[textureName]);
   };
-  object.backgroundTexture.image.src = "textures/bg.jpg";
+  object[textureName].image.src = imagePath;
 }
-
-function initPolaroidTexture00(gl, object) {
-  object.polaroidTexture00 = gl.createTexture();
-  object.polaroidTexture00.image = new Image();
-  object.polaroidTexture00.image.onload = function () {
-    handleLoadedTexture(gl, object.polaroidTexture00);
-  };
-  object.polaroidTexture00.image.src = "textures/polaroid04.jpg";
-}
-
-function initPolaroidTexture01(gl, object) {
-  object.polaroidTexture01 = gl.createTexture();
-  object.polaroidTexture01.image = new Image();
-  object.polaroidTexture01.image.onload = function () {
-    handleLoadedTexture(gl, object.polaroidTexture01);
-  };
-  object.polaroidTexture01.image.src = "textures/polaroid.jpg";
-}
-
-function initPolaroidTexture02(gl, object) {
-  object.polaroidTexture02 = gl.createTexture();
-  object.polaroidTexture02.image = new Image();
-  object.polaroidTexture02.image.onload = function () {
-    handleLoadedTexture(gl, object.polaroidTexture02);
-  };
-  object.polaroidTexture02.image.src = "textures/polaroid02.png";
-}
-
-function initPolaroidTexture03(gl, object) {
-  object.polaroidTexture03 = gl.createTexture();
-  object.polaroidTexture03.image = new Image();
-  object.polaroidTexture03.image.onload = function () {
-    handleLoadedTexture(gl, object.polaroidTexture03);
-  };
-  object.polaroidTexture03.image.src = "textures/polaroid03.jpg";
-}
-
-function initTexture(gl, object) {
-  object.videoTexture = gl.createTexture();
-  object.videoTexture.image = new Image();
-  object.videoTexture.image.onload = function () {
-    console.log("loaded video texture");
-    handleLoadedTexture(gl, object.videoTexture);
+function intializeTextures() {
+  const texturePaths = {
+    videoTexture: "textures/polaroid.jpg",
+    backgroundTexture: "textures/bg.jpg",
+    polaroidTexture00: "textures/polaroid04.jpg",
+    polaroidTexture01: "textures/polaroid.jpg",
+    polaroidTexture02: "textures/polaroid02.png",
+    polaroidTexture03: "textures/polaroid03.jpg",
   };
 
-  object.videoTexture.image.src = "textures/polaroid.jpg";
+  Object.entries(texturePaths).forEach(([textureName, path]) => {
+    loadImageTexture(gl, window, textureName, path);
+  });
 }
 
 // Helper function to create and configure a texture
