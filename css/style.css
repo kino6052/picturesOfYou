@@ -1,68 +1,126 @@
-body
-{
-font-family:Verdana,Arial,sans-serif;
-margin:20px;
-font-size:11px;
+/* Base styles */
+body {
+  font-family: Verdana, Arial, sans-serif;
+  margin: 20px;
+  font-size: 11px;
 }
 
-h1 {font-size:23px; color:#000000;}
-h2 {font-size:19.2px; color:#000090;}
-h3 {font-size:14px;}
-a {font-size:11px;}
+/* Typography */
+h1 { font-size: 23px; color: #000000; }
+h2 { font-size: 19.2px; color: #000090; }
+h3 { font-size: 14px; }
+a { font-size: 11px; }
 
-/*div{border:1px dashed rgb(250,0,0);} /*debug*/
+/* Debug styles */
+/*div { border: 1px dashed rgb(250,0,0); } /*debug*/
 
-#logo-packt{position:absolute; top:15px; right:15px}
-#top{position:relative; top:0px; left:0px}
-#contents{margin:0px; position:relative; top:0px; left:0px; width:100%; height:400px; z-index:0;}
-#codeContainer{margin:0px; position:absolute; top:0px; left:0px; overflow:auto; width:60%; height:400px; z-index:100;}
-#canvasContainer{margin:0px; position:absolute; top:0px; right:0px; width:39%; height:400px; display:none;}
-#buttons{position:relative; top:5px; left:0px; height:40px;}
-#buttonsCode{position:relative; top:0px; left:0px; width:60%;}
-#buttonsCanvas{position:absolute; top:0px; right:0px; width:40%; text-align:right; z-index:101;}
-#bottom{position:relative; top:5px; left:0px; margin-top:0px; display:none; z-index:102;}
+/* Layout components */
+#logo-packt { position: absolute; top: 15px; right: 15px; }
+#top { position: relative; top: 0; left: 0; }
 
-.wait{font-family:Arial,sans-serif; font-weight:bold; color:#ffffff; text-align:center; vertical-align:middle%;}
+#contents {
+  margin: 0;
+  position: relative;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 400px;
+  z-index: 0;
+}
 
+#codeContainer {
+  margin: 0;
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: auto;
+  width: 60%;
+  height: 400px;
+  z-index: 100;
+}
+
+#canvasContainer {
+  margin: 0;
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 39%;
+  height: 400px;
+  display: none;
+}
+
+/* Button sections */
+#buttons {
+  position: relative;
+  top: 5px;
+  left: 0;
+  height: 40px;
+}
+
+#buttonsCode {
+  position: relative;
+  top: 0;
+  left: 0;
+  width: 60%;
+}
+
+#buttonsCanvas {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 40%;
+  text-align: right;
+  z-index: 101;
+}
+
+#bottom {
+  position: relative;
+  top: 5px;
+  left: 0;
+  margin-top: 0;
+  display: none;
+  z-index: 102;
+}
+
+/* Helper classes */
+.wait {
+  font-family: Arial, sans-serif;
+  font-weight: bold;
+  color: #ffffff;
+  text-align: center;
+  vertical-align: middle;
+}
+
+/* Table styles */
 table {
-    font-size: 11px; 
-    margin-left: auto;
-    margin-right: auto;
-    padding:0px;
+  font-size: 11px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 0;
 }
 
-td {padding:3px;}
+td { padding: 3px; }
 
-.col1, .col3{background:#D1D1D1;}
-.col2 ,.col4{background: #ffffff;}
+.col1, .col3 { background: #D1D1D1; }
+.col2, .col4 { background: #ffffff; }
 
-.border{
-   border: 1px solid #D1D1D1;
-   font-size: 11px; 
+.border {
+  border: 1px solid #D1D1D1;
+  font-size: 11px;
 }
 
-p  {
-    font-size: 11px; 
-}
+/* Text elements */
+p { font-size: 11px; }
+ul, li { font-size: 12px; }
 
-ul {
-	font-size:12px;
-}
-
-li {
-	font-size:12px;
-}
-
-/* Add new flexbox styles */
+/* Controls layout */
 .controls-container {
   display: flex;
   gap: 2rem;
   padding: 1rem;
 }
 
-.controls-column {
-  flex: 1;
-}
+.controls-column { flex: 1; }
 
 .light-controls,
 .visual-controls {
@@ -83,13 +141,8 @@ li {
   margin-bottom: 0.5rem;
 }
 
-.slider-label {
-  min-width: 2rem;
-}
-
-.slider-container {
-  flex: 1;
-}
+.slider-label { min-width: 2rem; }
+.slider-container { flex: 1; }
 
 .color-picker {
   display: flex;
@@ -98,13 +151,9 @@ li {
   margin-bottom: 1rem;
 }
 
-.button-control {
-  margin-top: 1rem;
-}
+.button-control { margin-top: 1rem; }
 
 .button-group {
   display: flex;
   gap: 0.5rem;
 }
-
- 
