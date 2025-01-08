@@ -35,12 +35,12 @@ function loadImageTexture(gl, imagePath) {
 
 function intializeTextures() {
   const texturePaths = {
-    video: "textures/polaroid.jpg",
-    background: "textures/bg.jpg",
-    polaroid00: "textures/polaroid04.jpg",
-    polaroid01: "textures/polaroid.jpg",
-    polaroid02: "textures/polaroid02.png",
-    polaroid03: "textures/polaroid03.jpg",
+    video: "app/assets/textures/polaroid.jpg",
+    background: "app/assets/textures/bg.jpg",
+    polaroid00: "app/assets/textures/polaroid04.jpg",
+    polaroid01: "app/assets/textures/polaroid.jpg",
+    polaroid02: "app/assets/textures/polaroid02.png",
+    polaroid03: "app/assets/textures/polaroid03.jpg",
   };
 
   videoTexture = loadImageTexture(gl, texturePaths.video);

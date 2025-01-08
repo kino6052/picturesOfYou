@@ -1,1 +1,118 @@
-<!DOCTYPE html><html><head><title>Kirill Novik: Final CSCI4229 Project</title><meta http-equiv="content-type" content="text/html; charset=ISO-8859-1"><!-- CSS Styles--><link href="css/style.css" type="text/css" rel="stylesheet"><link href="css/desert.css" type="text/css" rel="stylesheet"><link href="css/colorpicker.css" type="text/css" rel="stylesheet"><link href="css/smoothness/jquery-ui-1.8.13.custom.css" type="text/css" rel="stylesheet"><!-- JavaScript Libraries--><script type="text/javascript" src="libs/gl-matrix-min.js"></script><script type="text/javascript" src="libs/jquery-1.5.1.min.js"></script><script type="text/javascript" src="libs/jquery-ui-1.8.13.custom.min.js"></script><script type="text/javascript" src="libs/prettify.js"></script><script type="text/javascript" src="libs/utils.js"></script><script type="text/javascript" src="libs/colorpicker.js"></script><script type="text/javascript" src="libs/codeview.js"></script><!-- Assets--><script type="text/javascript" src="assets/tv.js"></script><!-- Logic--><script src="./logic/utils.js"></script><script src="./logic/shared.js"></script><script src="./logic/gpu/matrix.js"></script><script src="./logic/gpu/buffers.js"></script><script src="./logic/gpu/programs.js"></script><script src="./logic/gpu/textures.js"></script><script src="./logic/gpu/framebuffer.js"></script><script src="./logic/scene/rain.js"></script><script src="./logic/scene/tv.js"></script><script src="./logic/scene/background.js"></script><script src="./logic/scene/lights.js"></script><script src="./logic/scene/index.js"></script><script src="./logic/index.js"></script><script src="./logic/main.js"></script><script src="./logic/gpu/postprocessing.js"></script><script src="./intialization.js"> </script></head><body><div id="top"><h1>Kirill Novik CSCI 4229 Final Project</h1><h2>"The Cure - Pictures of You" Visualization</h2><div id="logo-packt"><img src="packt.gif"/></div></div><div id="contents"><div id="canvasContainer"><canvas id="canvas-element-id" width="480" height="400">Your browser does not support the HTML5 canvas element.</canvas></div><div id="controls"> </div></div><div id="bottom"><div class="controls-container"><div class="controls-column"><div class="light-controls"><div class="control-heading">Light Direction</div><div class="slider-row"><div class="slider-label">X</div><div class="slider-value" id="slider-x-value">0.0</div><div class="slider-container"><div id="slider-x"></div></div></div><div class="slider-row"><div class="slider-label">Y</div><div class="slider-value" id="slider-y-value">-1.0</div><div class="slider-container"><div id="slider-y"></div></div></div><div class="slider-row"><div class="slider-label">Z</div><div class="slider-value" id="slider-z-value">-1.0</div><div class="slider-container"><div id="slider-z"></div></div></div></div></div><div class="controls-column"> <div class="visual-controls"><div class="color-picker"><div class="picker-label">Sphere Color (Material Diffuse Term)</div><div class="picker-control"><div class="colorSelector" id="colorSelectorSphere"><div style="background-color: rgb(128, 204, 26)"></div></div></div></div><div class="slider-row"><div class="control-label">Light Diffuse Term</div><div class="control-value" id="slider-ld-value">1.0</div><div class="slider-container"><div id="slider-ld"></div></div></div><div class="slider-row"><div class="control-label">Wave Amount</div><div class="control-value" id="slider-wave-value">1.0</div><div class="slider-container"><div id="slider-wave"></div></div></div><div class="button-control"><div class="control-label">Black and White</div><div class="button-group"><button class="control-button" id="bw-value">Update</button></div></div><div class="button-control"><div class="control-label">Video Playback</div><div class="button-group"><button class="control-button" id="play">Play</button><button class="control-button" id="pause">Pause</button></div></div></div></div></div></div><script>cview.run(cview.MODE_VIEW_AND_CODE);</script><script src="./ui.js"></script></body></html>
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Kirill Novik: Final CSCI4229 Project</title>
+  <meta http-equiv="content-type" content="text/html; charset=ISO-8859-1"><!-- CSS Styles-->
+  <link href="view/css/style.css" type="text/css" rel="stylesheet">
+  <link href="view/css/desert.css" type="text/css" rel="stylesheet">
+  <link href="view/css/colorpicker.css" type="text/css" rel="stylesheet">
+  <link href="view/css/smoothness/jquery-ui-1.8.13.custom.css" type="text/css" rel="stylesheet">
+  <!-- JavaScript Libraries-->
+  <script type="text/javascript" src="app/libs/gl-matrix-min.js"></script>
+  <script type="text/javascript" src="app/libs/jquery-1.5.1.min.js"></script>
+  <script type="text/javascript" src="app/libs/jquery-ui-1.8.13.custom.min.js"></script>
+  <script type="text/javascript" src="app/libs/prettify.js"></script>
+  <script type="text/javascript" src="app/libs/utils.js"></script>
+  <script type="text/javascript" src="app/libs/colorpicker.js"></script>
+  <script type="text/javascript" src="app/libs/codeview.js"></script><!-- Assets-->
+  <script type="text/javascript" src="app/assets/tv.js"></script><!-- Logic-->
+  <script src="app/logic/utils.js"></script>
+  <script src="app/logic/shared.js"></script>
+  <script src="app/logic/gpu/matrix.js"></script>
+  <script src="app/logic/gpu/buffers.js"></script>
+  <script src="app/logic/gpu/programs.js"></script>
+  <script src="app/logic/gpu/textures.js"></script>
+  <script src="app/logic/gpu/framebuffer.js"></script>
+  <script src="app/logic/scene/rain.js"></script>
+  <script src="app/logic/scene/tv.js"></script>
+  <script src="app/logic/scene/background.js"></script>
+  <script src="app/logic/scene/lights.js"></script>
+  <script src="app/logic/scene/index.js"></script>
+  <script src="app/logic/index.js"></script>
+  <script src="app/logic/main.js"></script>
+  <script src="app/logic/gpu/postprocessing.js"></script>
+  <script src="app/intialization.js"> </script>
+</head>
+
+<body>
+  <div id="top">
+    <h1>Kirill Novik CSCI 4229 Final Project</h1>
+    <h2>"The Cure - Pictures of You" Visualization</h2>
+    <div id="logo-packt"><img src="packt.gif" /></div>
+  </div>
+  <div id="contents">
+    <div id="canvasContainer"><canvas id="canvas-element-id" width="480" height="400">Your browser does not support the
+        HTML5 canvas element.</canvas></div>
+    <div id="controls"> </div>
+  </div>
+  <div id="bottom">
+    <div class="controls-container">
+      <div class="controls-column">
+        <div class="light-controls">
+          <div class="control-heading">Light Direction</div>
+          <div class="slider-row">
+            <div class="slider-label">X</div>
+            <div class="slider-value" id="slider-x-value">0.0</div>
+            <div class="slider-container">
+              <div id="slider-x"></div>
+            </div>
+          </div>
+          <div class="slider-row">
+            <div class="slider-label">Y</div>
+            <div class="slider-value" id="slider-y-value">-1.0</div>
+            <div class="slider-container">
+              <div id="slider-y"></div>
+            </div>
+          </div>
+          <div class="slider-row">
+            <div class="slider-label">Z</div>
+            <div class="slider-value" id="slider-z-value">-1.0</div>
+            <div class="slider-container">
+              <div id="slider-z"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="controls-column">
+        <div class="visual-controls">
+          <div class="color-picker">
+            <div class="picker-label">Sphere Color (Material Diffuse Term)</div>
+            <div class="picker-control">
+              <div class="colorSelector" id="colorSelectorSphere">
+                <div style="background-color: rgb(128, 204, 26)"></div>
+              </div>
+            </div>
+          </div>
+          <div class="slider-row">
+            <div class="control-label">Light Diffuse Term</div>
+            <div class="control-value" id="slider-ld-value">1.0</div>
+            <div class="slider-container">
+              <div id="slider-ld"></div>
+            </div>
+          </div>
+          <div class="slider-row">
+            <div class="control-label">Wave Amount</div>
+            <div class="control-value" id="slider-wave-value">1.0</div>
+            <div class="slider-container">
+              <div id="slider-wave"></div>
+            </div>
+          </div>
+          <div class="button-control">
+            <div class="control-label">Black and White</div>
+            <div class="button-group"><button class="control-button" id="bw-value">Update</button></div>
+          </div>
+          <div class="button-control">
+            <div class="control-label">Video Playback</div>
+            <div class="button-group"><button class="control-button" id="play">Play</button><button
+                class="control-button" id="pause">Pause</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>cview.run(cview.MODE_VIEW_AND_CODE);</script>
+  <script src="../app/ui.js"></script>
+</body>
+
+</html>

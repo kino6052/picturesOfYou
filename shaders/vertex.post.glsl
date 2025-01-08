@@ -1,47 +1,53 @@
-/*
-  *  VERTEX SHADER (POST)
-  *  Many thanks to the "WebGL: Beginner's Guide" Book
-  *  This shader implements Goraud shading and Lambert Lighting.
-  */
-attribute vec3 aVertexPosition;
-attribute vec3 aVertexNormal;
-attribute vec2 aTextureCoord;
+/* 
+ * Post-processing vertex shader
+ * Handles vertex transformation and lighting calculations
+ */
 
-uniform mat4 uMVMatrix;
-uniform mat4 uPMatrix;
-uniform mat4 uNMatrix;
+// Vertex attributes
+attribute vec3 aVertexPosition;  // Position of vertex
+attribute vec3 aVertexNormal;    // Normal vector at vertex
+attribute vec2 aTextureCoord;    // Texture coordinates
 
-uniform vec3 uLightDirection;   //light direction
-uniform vec4 uLightDiffuse;     //light color
-uniform vec4 uMaterialDiffuse;  //object color
+// Transformation matrices  
+uniform mat4 uMVMatrix;    // Model-view matrix
+uniform mat4 uPMatrix;     // Projection matrix
+uniform mat4 uNMatrix;     // Normal matrix
 
+// Lighting parameters
+uniform vec3 uLightDirection;    // Direction of light source
+uniform vec4 uLightDiffuse;      // Color of light
+uniform vec4 uMaterialDiffuse;   // Color of object
+
+// Texture control
 uniform bool uIsTextureEnabled;
+
+// Values passed to fragment shader
 varying vec2 vTextureCoord;
 varying vec4 vFinalColor;
 
 void main(void) {
-  //Transformed normal position
+  // Transform and normalize surface normal
   vec3 N = normalize(vec3(uNMatrix * vec4(aVertexNormal, 1.0)));
-
-  //Normalize light to calculate lambertTerm
+  
+  // Normalize light direction vector
   vec3 L = normalize(uLightDirection);
-
-  //Lambert's cosine law
-  float lambertTerm = dot(N,-L);
-
-  //Final Color
+  
+  // Calculate Lambert term (dot product of normal and light direction)
+  float lambertTerm = dot(N, -L);
+  
+  // Calculate diffuse lighting color
   vec4 Id = uMaterialDiffuse * uLightDiffuse * lambertTerm;
   vFinalColor = Id;
-
+  
+  // Handle texture coordinates if enabled
   if (uIsTextureEnabled) {
-      vFinalColor.a = 1.0;
-      vTextureCoord = aTextureCoord;
+    vFinalColor.a = 1.0;
+    vTextureCoord = aTextureCoord;
   }
   if (!uIsTextureEnabled) {
-      vFinalColor.a = 1.0;
+    vFinalColor.a = 1.0;
   }
-
-  //Transformed vertex position
+  
+  // Transform vertex position for post-processing
   gl_Position = vec4(-aVertexPosition * 2.1, 1.0);
-
 }

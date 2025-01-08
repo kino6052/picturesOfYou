@@ -28,26 +28,26 @@ async function loadAndAppendScript(url, id, type) {
 async function run() {
   const scriptsToLoad = [
     {
-      url: "./shaders/vertex.glsl",
+      url: "../shaders/vertex.glsl",
       id: "shader-vs",
       type: "x-shader/x-vertex",
     },
     {
-      url: "./shaders/vertex.post.glsl",
+      url: "../shaders/vertex.post.glsl",
       id: "shader-post-vs",
       type: "x-shader/x-vertex",
     },
     {
-      url: "./shaders/fragment.glsl",
+      url: "../shaders/fragment.glsl",
       id: "shader-fs",
       type: "x-shader/x-fragment",
     },
     {
-      url: "./shaders/fragment.post.glsl",
+      url: "../shaders/fragment.post.glsl",
       id: "shader-post-fs",
       type: "x-shader/x-fragment",
     },
-    { url: "./logic/index.js", id: "code-js", type: "text/javascript" },
+    { url: "./app/logic/index.js", id: "code-js", type: "text/javascript" },
   ];
 
   // Load all scripts sequentially

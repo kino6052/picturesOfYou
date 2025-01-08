@@ -5,8 +5,8 @@ function pugToHtml(pugTemplate) {
   try {
     // Compile the template
     const compiledFunction = pug.compile(pugTemplate, {
-      filename: "index.pug",
-      basedir: "./",
+      filename: "./view/index.pug",
+      basedir: "./view/",
     });
 
     // Render the HTML
@@ -35,7 +35,7 @@ const fs = require("fs");
 function convertIndexPugToHtml() {
   try {
     // Read the index.pug file
-    const pugTemplate = fs.readFileSync("./index.pug", "utf8");
+    const pugTemplate = fs.readFileSync("./view/index.pug", "utf8");
 
     // Convert to HTML using pugToHtml function
     const html = pugToHtml(pugTemplate);

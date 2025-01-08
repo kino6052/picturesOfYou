@@ -100,7 +100,7 @@ function drawTVModel() {
 function setupVideoElement() {
   video.autoplay = true;
   video.loop = true;
-  video.src = "video/pictures.mp4";
+  video.src = "app/assets/pictures.mp4";
   video.setAttribute("playsinline", "");
   video.setAttribute("webkit-playsinline", "");
 
