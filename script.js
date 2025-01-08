@@ -4,7 +4,10 @@ const pug = require("pug");
 function pugToHtml(pugTemplate) {
   try {
     // Compile the template
-    const compiledFunction = pug.compile(pugTemplate);
+    const compiledFunction = pug.compile(pugTemplate, {
+      filename: "index.pug",
+      basedir: "./",
+    });
 
     // Render the HTML
     const html = compiledFunction();
