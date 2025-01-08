@@ -1,4 +1,3 @@
-let renderbuffer;
 let blurAmount = 1.0;
 let waveAmount = 1.0;
 let bw = 0;

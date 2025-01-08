@@ -27,7 +27,7 @@ function updateNormalMatrix() {
 
 function drawScene() {
   try {
-    initializeFramebuffer();
+    initializeFramebufferState();
     setupViewMatrix();
 
     drawVideoScreen();

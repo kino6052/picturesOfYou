@@ -5,7 +5,6 @@ var polaroidTexture00;
 var polaroidTexture01;
 var polaroidTexture02;
 var polaroidTexture03;
-var framebufferTexture;
 
 function intializeTextures() {
   initTexture(gl, window);
@@ -81,3 +80,36 @@ function initTexture(gl, object) {
 
   object.videoTexture.image.src = "textures/polaroid.jpg";
 }
+
+// Helper function to create and configure a texture
+const createTexture = (gl, width, height) => {
+  const texture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+
+  // Set texture parameters
+  const textureParams = [
+    [gl.TEXTURE_MAG_FILTER, gl.NEAREST],
+    [gl.TEXTURE_MIN_FILTER, gl.NEAREST],
+    [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE],
+    [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE],
+  ];
+
+  textureParams.forEach(([param, value]) => {
+    gl.texParameteri(gl.TEXTURE_2D, param, value);
+  });
+
+  // Allocate texture storage
+  gl.texImage2D(
+    gl.TEXTURE_2D,
+    0,
+    gl.RGBA,
+    width,
+    height,
+    0,
+    gl.RGBA,
+    gl.UNSIGNED_BYTE,
+    null
+  );
+
+  return texture;
+};
