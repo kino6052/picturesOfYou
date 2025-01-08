@@ -1,62 +1,71 @@
-/* TEXTURE OPERATIONS */
-var videoTexture;
-var backgroundTexture;
-var polaroidTexture00;
-var polaroidTexture01;
-var polaroidTexture02;
-var polaroidTexture03;
+let videoTexture;
+let backgroundTexture;
+let polaroidTexture00;
+let polaroidTexture01;
+let polaroidTexture02;
+let polaroidTexture03;
 
-function handleLoadedTexture(gl, texture) {
+function setTextureParameters(gl) {
+  const params = [
+    [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE],
+    [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE],
+    [gl.TEXTURE_MAG_FILTER, gl.LINEAR],
+    [gl.TEXTURE_MIN_FILTER, gl.LINEAR],
+  ];
+
+  params.forEach(([param, value]) => {
+    gl.texParameteri(gl.TEXTURE_2D, param, value);
+  });
+}
+
+function configureLoadedTexture(gl, texture) {
   gl.bindTexture(gl.TEXTURE_2D, texture);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  setTextureParameters(gl);
   gl.generateMipmap(gl.TEXTURE_2D);
   gl.bindTexture(gl.TEXTURE_2D, null);
 }
 
-function loadImageTexture(gl, object, textureName, imagePath) {
-  object[textureName] = gl.createTexture();
-  object[textureName].image = new Image();
-  object[textureName].image.onload = function () {
-    handleLoadedTexture(gl, object[textureName]);
-  };
-  object[textureName].image.src = imagePath;
+function loadImageTexture(gl, imagePath) {
+  const texture = gl.createTexture();
+  texture.image = new Image();
+  texture.image.onload = () => configureLoadedTexture(gl, texture);
+  texture.image.src = imagePath;
+  return texture;
 }
+
 function intializeTextures() {
   const texturePaths = {
-    videoTexture: "textures/polaroid.jpg",
-    backgroundTexture: "textures/bg.jpg",
-    polaroidTexture00: "textures/polaroid04.jpg",
-    polaroidTexture01: "textures/polaroid.jpg",
-    polaroidTexture02: "textures/polaroid02.png",
-    polaroidTexture03: "textures/polaroid03.jpg",
+    video: "textures/polaroid.jpg",
+    background: "textures/bg.jpg",
+    polaroid00: "textures/polaroid04.jpg",
+    polaroid01: "textures/polaroid.jpg",
+    polaroid02: "textures/polaroid02.png",
+    polaroid03: "textures/polaroid03.jpg",
   };
 
-  Object.entries(texturePaths).forEach(([textureName, path]) => {
-    loadImageTexture(gl, window, textureName, path);
-  });
+  videoTexture = loadImageTexture(gl, texturePaths.video);
+  backgroundTexture = loadImageTexture(gl, texturePaths.background);
+  polaroidTexture00 = loadImageTexture(gl, texturePaths.polaroid00);
+  polaroidTexture01 = loadImageTexture(gl, texturePaths.polaroid01);
+  polaroidTexture02 = loadImageTexture(gl, texturePaths.polaroid02);
+  polaroidTexture03 = loadImageTexture(gl, texturePaths.polaroid03);
 }
 
-// Helper function to create and configure a texture
-const createTexture = (gl, width, height) => {
+function createTexture(gl, width, height) {
   const texture = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, texture);
 
-  // Set texture parameters
-  const textureParams = [
+  const params = [
     [gl.TEXTURE_MAG_FILTER, gl.NEAREST],
     [gl.TEXTURE_MIN_FILTER, gl.NEAREST],
     [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE],
     [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE],
   ];
 
-  textureParams.forEach(([param, value]) => {
+  params.forEach(([param, value]) => {
     gl.texParameteri(gl.TEXTURE_2D, param, value);
   });
 
-  // Allocate texture storage
   gl.texImage2D(
     gl.TEXTURE_2D,
     0,
@@ -70,4 +79,4 @@ const createTexture = (gl, width, height) => {
   );
 
   return texture;
-};
+}
