@@ -1,182 +1,144 @@
-	
-	var utils = new utilsObject();
-	    
-	function utilsObject(){}
-	
-	/**
-	* Obtains a WebGL context for the canvas with id 'canvas-element-id'
-	* This function is invoked when the WebGL app is starting.
-	*/
-	utilsObject.prototype.getGLContext = function(name){
-	    
-		var canvas = document.getElementById(name);
-		var ctx = null;
-		
-		if (canvas == null){
-			alert('there is no canvas on this page');
-			return null;
-		}
-		else {
-			c_width = canvas.width;
-			c_height = canvas.height;
-		}
-				
-		var names = ["webgl", "experimental-webgl", "webkit-3d", "moz-webgl"];
-	
-		for (var i = 0; i < names.length; ++i) {
-		try {
-			ctx = canvas.getContext(names[i]);
-		} 
-		catch(e) {}
-			if (ctx) {
-				break;
-			}
-		}
-		if (ctx == null) {
-			alert("Could not initialise WebGL");
-			return null;
-		}
-		else {
-			return ctx;
-		}
-	}
-	
-	/**
-	* Utilitary function that allows to set up the shaders (program) using an embedded script (look at the beginning of this source code)
-	*/
-	utilsObject.prototype.getShader = function(gl, id) {
-       var script = document.getElementById(id);
-       if (!script) {
-           return null;
-       }
+class Utils {
+  /**
+   * Obtains a WebGL context for the canvas with the given id.
+   * This function is invoked when the WebGL app is starting.
+   * @param {string} name - The id of the canvas element.
+   * @returns {WebGLRenderingContext|null} The WebGL context, or null if unavailable.
+   */
+  getGLContext(name) {
+    const getContext = (canvas, names) => {
+      for (const name of names) {
+        const context = canvas.getContext(name);
+        if (context) return context;
+      }
+      return null;
+    };
 
-		var str = "";
-		var k = script.firstChild;
-        while (k) {
-            if (k.nodeType == 3) {
-                str += k.textContent;
-            }
-            k = k.nextSibling;
-        }
-
-        var shader;
-        if (script.type == "x-shader/x-fragment") {
-            shader = gl.createShader(gl.FRAGMENT_SHADER);
-        } else if (script.type == "x-shader/x-vertex") {
-            shader = gl.createShader(gl.VERTEX_SHADER);
-        } else {
-            return null;
-        }
-
-        gl.shaderSource(shader, str);
-        gl.compileShader(shader);
-
-        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-            alert(gl.getShaderInfoLog(shader));
-            return null;
-        }
-        return shader;
+    const canvas = document.getElementById(name);
+    if (!canvas) {
+      alert("There is no canvas on this page");
+      return null;
     }
-	
-	utilsObject.prototype.requestAnimFrame = function(o){
-		requestAnimFrame(o);
-	}
-    
-    //indices have to be completely defined NO TRIANGLE_STRIP only TRIANGLES
-    utilsObject.prototype.calculateNormals = function(vs, ind){
-        var x=0; 
-        var y=1;
-        var z=2;
-        
-        var ns = [];
-        for(var i=0;i<vs.length;i++){ //for each vertex, initialize normal x, normal y, normal z
-            ns[i]=0.0;
-        }
-        
-        for(var i=0;i<ind.length;i=i+3){ //we work on triads of vertices to calculate normals so i = i+3 (i = indices index)
-            var v1 = [];
-            var v2 = [];
-            var normal = [];
-            //p1 - p0
-             v1[x] = vs[3*ind[i+1]+x] - vs[3*ind[i]+x];
-             v1[y] = vs[3*ind[i+1]+y] - vs[3*ind[i]+y];
-             v1[z] = vs[3*ind[i+1]+z] - vs[3*ind[i]+z];
-           // p0 - p1
-             v2[x] = vs[3*ind[i+2]+x] - vs[3*ind[i+1]+x];
-             v2[y] = vs[3*ind[i+2]+y] - vs[3*ind[i+1]+y];
-             v2[z] = vs[3*ind[i+2]+z] - vs[3*ind[i+1]+z];            
-            //p2 - p1
-            // v1[x] = vs[3*ind[i+2]+x] - vs[3*ind[i+1]+x];
-            // v1[y] = vs[3*ind[i+2]+y] - vs[3*ind[i+1]+y];
-            // v1[z] = vs[3*ind[i+2]+z] - vs[3*ind[i+1]+z];
-           // p0 - p1
-            // v2[x] = vs[3*ind[i]+x] - vs[3*ind[i+1]+x];
-            // v2[y] = vs[3*ind[i]+y] - vs[3*ind[i+1]+y];
-            // v2[z] = vs[3*ind[i]+z] - vs[3*ind[i+1]+z];
-            //cross product by Sarrus Rule
-            normal[x] = v1[y]*v2[z] - v1[z]*v2[y];
-            normal[y] = v1[z]*v2[x] - v1[x]*v2[z];
-            normal[z] = v1[x]*v2[y] - v1[y]*v2[x];
-            
-            // ns[3*ind[i]+x] += normal[x];
-            // ns[3*ind[i]+y] += normal[y];
-            // ns[3*ind[i]+z] += normal[z];
-             for(j=0;j<3;j++){ //update the normals of that triangle: sum of vectors
-                ns[3*ind[i+j]+x] =  ns[3*ind[i+j]+x] + normal[x];
-                 ns[3*ind[i+j]+y] =  ns[3*ind[i+j]+y] + normal[y];
-                 ns[3*ind[i+j]+z] =  ns[3*ind[i+j]+z] + normal[z];
-             }
-        }
-        //normalize the result
-        for(var i=0;i<vs.length;i=i+3){ //the increment here is because each vertex occurs with an offset of 3 in the array (due to x, y, z contiguous values)
-        
-            var nn=[];
-            nn[x] = ns[i+x];
-            nn[y] = ns[i+y];
-            nn[z] = ns[i+z];
-            
-            var len = Math.sqrt((nn[x]*nn[x])+(nn[y]*nn[y])+(nn[z]*nn[z]));
-            if (len == 0) len = 0.00001;
-            
-            nn[x] = nn[x]/len;
-            nn[y] = nn[y]/len;
-            nn[z] = nn[z]/len;
-            
-            ns[i+x] = nn[x];
-            ns[i+y] = nn[y];
-            ns[i+z] = nn[z];
-        }
-        
-        return ns;
+
+    const names = ["webgl", "experimental-webgl", "webkit-3d", "moz-webgl"];
+    const ctx = getContext(canvas, names);
+
+    if (!ctx) {
+      alert("Could not initialise WebGL");
+      return null;
     }
- 
+    return ctx;
+  }
 
-    utilsObject.prototype.calculateTangents = function(vertices, normals)
-    {
-        var vs = vertices;
-        var ts = [];
-        for(var i=0;i<vs.length; i++){
-            ts[i]=0.0;
-        }
-        return ts;
+  /**
+   * Utility function to set up shaders using an embedded script element.
+   * The script element should have its type attribute set to either "x-shader/x-fragment" or "x-shader/x-vertex".
+   * The function compiles the shader and returns it.
+   * @param {WebGLRenderingContext} renderingContext - The WebGL rendering context.
+   * @param {string} scriptId - The id of the script element containing the shader source.
+   * @returns {WebGLShader|null} The compiled shader, or null if an error occurred.
+   */
+  getShader(renderingContext, scriptId) {
+    const script = document.getElementById(scriptId);
+    if (!script) return null;
+
+    const shaderType =
+      script.type === "x-shader/x-fragment"
+        ? renderingContext.FRAGMENT_SHADER
+        : script.type === "x-shader/x-vertex"
+        ? renderingContext.VERTEX_SHADER
+        : null;
+    if (!shaderType) return null;
+
+    const shader = renderingContext.createShader(shaderType);
+    renderingContext.shaderSource(shader, script.textContent);
+    renderingContext.compileShader(shader);
+
+    if (
+      !renderingContext.getShaderParameter(
+        shader,
+        renderingContext.COMPILE_STATUS
+      )
+    ) {
+      alert(renderingContext.getShaderInfoLog(shader));
+      return null;
     }
-	
-	
-				
+    return shader;
+  }
 
+  /**
+   * Calculates normals for a set of vertices and indices.
+   * Indices must be fully defined; only TRIANGLES are supported, not TRIANGLE_STRIP.
+   * @param {number[]} vertices - The vertex positions.
+   * @param {number[]} indices - The indices defining the triangles.
+   * @returns {number[]} The calculated normals.
+   */
+  calculateNormals(vertices, indices) {
+    const normals = new Array(vertices.length).fill(0);
 
+    for (let i = 0; i < indices.length; i += 3) {
+      const [i0, i1, i2] = [indices[i], indices[i + 1], indices[i + 2]];
+      const v0 = vertices.slice(i0 * 3, i0 * 3 + 3);
+      const v1 = vertices.slice(i1 * 3, i1 * 3 + 3);
+      const v2 = vertices.slice(i2 * 3, i2 * 3 + 3);
 
-	/**
-	* Provides requestAnimationFrame in a cross browser way.
-	*/
-	requestAnimFrame = (function() {
-    return window.requestAnimationFrame ||
-         window.webkitRequestAnimationFrame ||
-         window.mozRequestAnimationFrame ||
-         window.oRequestAnimationFrame ||
-         window.msRequestAnimationFrame ||
-         function(/* function FrameRequestCallback */ callback, /* DOMElement Element */ element) {
-           window.setTimeout(callback, 1000/60);
-         };
-	})();
-	
+      const cross = (a, b) => [
+        a[1] * b[2] - a[2] * b[1],
+        a[2] * b[0] - a[0] * b[2],
+        a[0] * b[1] - a[1] * b[0],
+      ];
+
+      const sub = (a, b) => a.map((val, idx) => val - b[idx]);
+
+      const normal = cross(sub(v1, v0), sub(v2, v1));
+
+      for (const idx of [i0, i1, i2]) {
+        normals[idx * 3] += normal[0];
+        normals[idx * 3 + 1] += normal[1];
+        normals[idx * 3 + 2] += normal[2];
+      }
+    }
+
+    for (let i = 0; i < normals.length; i += 3) {
+      const len = Math.hypot(normals[i], normals[i + 1], normals[i + 2]);
+      if (len > 0) {
+        normals[i] /= len;
+        normals[i + 1] /= len;
+        normals[i + 2] /= len;
+      }
+    }
+
+    return normals;
+  }
+
+  /**
+   * Calculates tangents for a set of vertices and normals.
+   * Tangent calculation logic should be implemented here.
+   * @param {number[]} vertices - The vertex positions.
+   * @param {number[]} normals - The vertex normals.
+   * @returns {number[]} The calculated tangents.
+   */
+  calculateTangents(vertices, normals) {
+    const tangents = new Array(vertices.length).fill(0.0);
+    // Tangent calculation logic should be implemented here
+    return tangents;
+  }
+
+  /**
+   * Provides requestAnimationFrame in a cross-browser way.
+   * @param {Function} callback - The callback to execute on the next frame.
+   */
+  requestAnimFrame(callback) {
+    const fn =
+      window.requestAnimationFrame ||
+      window.webkitRequestAnimationFrame ||
+      window.mozRequestAnimationFrame ||
+      window.oRequestAnimationFrame ||
+      window.msRequestAnimationFrame ||
+      ((cb) => window.setTimeout(cb, 1000 / 60));
+    fn(callback);
+  }
+}
+
+// Usage:
+const utils = new Utils();
