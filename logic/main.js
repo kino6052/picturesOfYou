@@ -4,7 +4,7 @@ let timeIncrement = 0.05;
 function renderLoopWithDeps(drawSceneFn, animFrameFn, timeState) {
   animFrameFn(() => renderLoopWithDeps(drawSceneFn, animFrameFn, timeState));
   drawSceneFn();
-  timeState.time += timeState.timeIncrement;
+  time += timeIncrement;
 }
 
 function renderLoop() {
