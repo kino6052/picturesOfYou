@@ -271,7 +271,6 @@ function drawScene() {
 
   updateAffineTransformationsArray(
     affineTransformationsArray,
-    dropletQuantity,
     rotationSpeed,
     speed
   );
