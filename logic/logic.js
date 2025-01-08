@@ -66,127 +66,6 @@ var framebufferTexture;
 /* MATRIX OPERATIONS */
 var mvMatrixStack = [];
 
-
-
-/*
- * INITIALIZE LIGHTS
- * Description:
- * Pass direction, diffuse color, and material diffuse
- * to the GPU
- */
-function initLightsWithContext(glContext, program) {
-  glContext.uniform3fv(program.uLightDirection, [0.0, -1.0, -1.0]);
-  glContext.uniform4fv(program.uLightDiffuse, [1.0, 1.0, 1.0, 1.0]);
-  glContext.uniform4fv(program.uMaterialDiffuse, [0.5, 0.5, 0.5, 1.0]);
-}
-
-/**
- * This function generates SPHERE data and creates the buffers
- */
-function initBuffersWithContext(glContext, program, tvModel) {
-  const buffers = {
-    screenVertices: [-0.5, -0.5, 0, 0.5, -0.5, 0, -0.5, 0.5, 0, 0.5, 0.5, 0],
-    screenIndices: [0, 2, 1, 1, 2, 3],
-    textureCoords: [0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0]
-  };
-
-  buffers.screenNormals = utils.calculateNormals(buffers.screenVertices, buffers.screenIndices);
-  buffers.normals = utils.calculateNormals(tvModel.vertices, tvModel.indices);
-
-  // Vertex Buffer for the Plane with Video Texture
-  screenVerticesBuffer = glContext.createBuffer();
-  glContext.bindBuffer(glContext.ARRAY_BUFFER, screenVerticesBuffer);
-  glContext.bufferData(
-    glContext.ARRAY_BUFFER,
-    new Float32Array(buffers.screenVertices),
-    glContext.STATIC_DRAW
-  );
-
-  // Normals Buffer for the Plane with Video Texture
-  screenNormalsBuffer = glContext.createBuffer();
-  glContext.bindBuffer(glContext.ARRAY_BUFFER, screenNormalsBuffer);
-  glContext.bufferData(
-    glContext.ARRAY_BUFFER,
-    new Float32Array(buffers.screenNormals),
-    glContext.STATIC_DRAW
-  );
-
-  // Index Buffer for the Plane with Video Texture
-  screenIndicesBuffer = glContext.createBuffer();
-  glContext.bindBuffer(glContext.ELEMENT_ARRAY_BUFFER, screenIndicesBuffer);
-  glContext.bufferData(
-    glContext.ELEMENT_ARRAY_BUFFER,
-    new Uint16Array(buffers.screenIndices),
-    glContext.STATIC_DRAW
-  );
-
-  // Texture Coordinates Buffer for the Plane with Video Texture
-  screenTextureCoordBuffer = glContext.createBuffer();
-  glContext.bindBuffer(glContext.ARRAY_BUFFER, screenTextureCoordBuffer);
-  glContext.bufferData(
-    glContext.ARRAY_BUFFER,
-    new Float32Array(buffers.textureCoords),
-    glContext.STATIC_DRAW
-  );
-  glContext.enableVertexAttribArray(program.aTextureCoord);
-  glContext.uniform1i(program.samplerUniform, 0);
-
-  // Vertex Buffer for the TV Object
-  verticesBuffer = glContext.createBuffer();
-  glContext.bindBuffer(glContext.ARRAY_BUFFER, verticesBuffer);
-  glContext.bufferData(glContext.ARRAY_BUFFER, new Float32Array(tvModel.vertices), glContext.STATIC_DRAW);
-
-  // Normals Buffer for the TV Object
-  tvNormalsBuffer = glContext.createBuffer();
-  glContext.bindBuffer(glContext.ARRAY_BUFFER, tvNormalsBuffer);
-  glContext.bufferData(glContext.ARRAY_BUFFER, new Float32Array(buffers.normals), glContext.STATIC_DRAW);
-
-  // Indices Buffer for the TV Object
-  indicesBuffer = glContext.createBuffer();
-  glContext.bindBuffer(glContext.ELEMENT_ARRAY_BUFFER, indicesBuffer);
-  glContext.bufferData(
-    glContext.ELEMENT_ARRAY_BUFFER,
-    new Uint16Array(tvModel.indices),
-    glContext.STATIC_DRAW
-  );
-
-  return buffers;
-}
-
-
-// Main function to initialize the framebuffer and assign global variables
-function initFramebuffer(gl, width = 2048, height = 2048) {
-  if (!gl) {
-    throw new Error("WebGL context is required");
-  }
-
-  // 1. Initialize Color Texture
-  framebufferTexture = createTexture(gl, width, height);
-
-  // 2. Initialize Render Buffer (Depth Buffer)
-  renderbuffer = createRenderbuffer(gl, width, height);
-
-  // 3. Initialize and Set Up Frame Buffer
-  framebuffer = createFramebuffer(gl, framebufferTexture, renderbuffer);
-
-  // 4. Check if framebuffer is complete
-  checkFramebufferComplete(gl);
-
-  // Clean up bindings
-  gl.bindTexture(gl.TEXTURE_2D, null);
-  gl.bindRenderbuffer(gl.RENDERBUFFER, null);
-  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-  gl.bindBuffer(gl.ARRAY_BUFFER, null);
-  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-
-  // Assign to global variables
-  framebufferTexture = framebufferTexture;
-  renderbuffer = renderbuffer;
-  framebuffer = framebuffer;
-
-  return true;
-}
-
 /**
  * Render Loop
  */
@@ -211,9 +90,8 @@ function initBuffers() {
 }
 
 function renderLoop() {
-  renderLoopWithDeps(
-    drawScene,
-    utils.requestAnimFrame,
-    { time, timeIncrement }
-  );
+  renderLoopWithDeps(drawScene, utils.requestAnimFrame, {
+    time,
+    timeIncrement,
+  });
 }
