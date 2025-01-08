@@ -69,12 +69,12 @@ function handleVideoError() {
  * Initializes all required textures and framebuffers.
  */
 function initializeTexturesAndFramebuffers() {
-  initTexture();
-  initBackgroundTexture();
-  initPolaroidTexture00();
-  initPolaroidTexture01();
-  initPolaroidTexture02();
-  initPolaroidTexture03();
+  initTexture(gl, window);
+  initBackgroundTexture(gl, window);
+  initPolaroidTexture00(gl, window);
+  initPolaroidTexture01(gl, window);
+  initPolaroidTexture02(gl, window);
+  initPolaroidTexture03(gl, window);
   initFramebuffer(gl);
 }
 

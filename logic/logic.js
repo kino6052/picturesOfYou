@@ -59,6 +59,15 @@ var speed = 0.01;
 var rotationSpeed = 0.01;
 var spread = 3000;
 
+/* TEXTURE OPERATIONS */
+var videoTexture;
+var backgroundTexture;
+var polaroidTexture00;
+var polaroidTexture01;
+var polaroidTexture02;
+var polaroidTexture03;
+var framebufferTexture;
+
 /*
  * AFFINE TRANSFORMATIONS
  */
@@ -265,153 +274,23 @@ function mvPopMatrix() {
   mvMatrix = mvMatrixStack.pop();
 }
 
-/* TEXTURE OPERATIONS */
-function handleLoadedTexture(texture) {
-  gl.bindTexture(gl.TEXTURE_2D, texture);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-  gl.generateMipmap(gl.TEXTURE_2D);
-  gl.bindTexture(gl.TEXTURE_2D, null);
-}
-
-var videoTexture;
-var backgroundTexture;
-var polaroidTexture00;
-var polaroidTexture01;
-var polaroidTexture02;
-var polaroidTexture03;
-var framebufferTexture;
-
-function initBackgroundTexture() {
-  backgroundTexture = gl.createTexture();
-  backgroundTexture.image = new Image();
-  backgroundTexture.image.onload = function () {
-    handleLoadedTexture(backgroundTexture);
-  };
-  backgroundTexture.image.src = "textures/bg.jpg";
-}
-
-function initPolaroidTexture00() {
-  polaroidTexture00 = gl.createTexture();
-  polaroidTexture00.image = new Image();
-  polaroidTexture00.image.onload = function () {
-    handleLoadedTexture(polaroidTexture00);
-  };
-  polaroidTexture00.image.src = "textures/polaroid04.jpg";
-}
-
-function initPolaroidTexture01() {
-  polaroidTexture01 = gl.createTexture();
-  polaroidTexture01.image = new Image();
-  polaroidTexture01.image.onload = function () {
-    handleLoadedTexture(polaroidTexture01);
-  };
-  polaroidTexture01.image.src = "textures/polaroid.jpg";
-}
-
-function initPolaroidTexture02() {
-  polaroidTexture02 = gl.createTexture();
-  polaroidTexture02.image = new Image();
-  polaroidTexture02.image.onload = function () {
-    handleLoadedTexture(polaroidTexture02);
-  };
-  polaroidTexture02.image.src = "textures/polaroid02.png";
-}
-
-function initPolaroidTexture03() {
-  polaroidTexture03 = gl.createTexture();
-  polaroidTexture03.image = new Image();
-  polaroidTexture03.image.onload = function () {
-    handleLoadedTexture(polaroidTexture03);
-  };
-  polaroidTexture03.image.src = "textures/polaroid03.jpg";
-}
-
-function initTexture() {
-  videoTexture = gl.createTexture();
-  videoTexture.image = new Image();
-  videoTexture.image.onload = function () {
-    console.log("loaded video texture");
-    handleLoadedTexture(videoTexture);
-  };
-
-  videoTexture.image.src = "textures/polaroid.jpg";
-}
-
-/**
- * Initializes a WebGL framebuffer with color and depth attachments
- * @param {WebGLRenderingContext} gl - The WebGL context
- * @param {number} [width=2048] - The width of the framebuffer
- * @param {number} [height=2048] - The height of the framebuffer
- * @returns {boolean} - Returns true if initialization was successful
- * @throws {Error} - Throws if framebuffer is not complete
- */
+// Main function to initialize the framebuffer and assign global variables
 function initFramebuffer(gl, width = 2048, height = 2048) {
   if (!gl) {
     throw new Error("WebGL context is required");
   }
 
   // 1. Initialize Color Texture
-  framebufferTexture = gl.createTexture();
-  gl.bindTexture(gl.TEXTURE_2D, framebufferTexture);
-
-  // Set texture parameters
-  const textureParams = [
-    [gl.TEXTURE_MAG_FILTER, gl.NEAREST],
-    [gl.TEXTURE_MIN_FILTER, gl.NEAREST],
-    [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE],
-    [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE],
-  ];
-
-  textureParams.forEach(([param, value]) => {
-    gl.texParameteri(gl.TEXTURE_2D, param, value);
-  });
-
-  // Allocate texture storage
-  gl.texImage2D(
-    gl.TEXTURE_2D,
-    0,
-    gl.RGBA,
-    width,
-    height,
-    0,
-    gl.RGBA,
-    gl.UNSIGNED_BYTE,
-    null
-  );
+  framebufferTexture = createTexture(gl, width, height);
 
   // 2. Initialize Render Buffer (Depth Buffer)
-  renderbuffer = gl.createRenderbuffer();
-  gl.bindRenderbuffer(gl.RENDERBUFFER, renderbuffer);
-  gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, width, height);
+  renderbuffer = createRenderbuffer(gl, width, height);
 
   // 3. Initialize and Set Up Frame Buffer
-  framebuffer = gl.createFramebuffer();
-  gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+  framebuffer = createFramebuffer(gl, framebufferTexture, renderbuffer);
 
-  // Attach color and depth buffers
-  gl.framebufferTexture2D(
-    gl.FRAMEBUFFER,
-    gl.COLOR_ATTACHMENT0,
-    gl.TEXTURE_2D,
-    framebufferTexture,
-    0
-  );
-
-  gl.framebufferRenderbuffer(
-    gl.FRAMEBUFFER,
-    gl.DEPTH_ATTACHMENT,
-    gl.RENDERBUFFER,
-    renderbuffer
-  );
-
-  // Check framebuffer completeness
-  const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
-  if (status !== gl.FRAMEBUFFER_COMPLETE) {
-    throw new Error(`Framebuffer is incomplete: ${status}`);
-  }
+  // 4. Check if framebuffer is complete
+  checkFramebufferComplete(gl);
 
   // Clean up bindings
   gl.bindTexture(gl.TEXTURE_2D, null);
@@ -420,8 +299,14 @@ function initFramebuffer(gl, width = 2048, height = 2048) {
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 
+  // Assign to global variables
+  framebufferTexture = framebufferTexture;
+  renderbuffer = renderbuffer;
+  framebuffer = framebuffer;
+
   return true;
 }
+
 /**
  * Render Loop
  */
