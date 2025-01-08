@@ -1,1102 +1,123 @@
 <html>
-
-<head>
-<title>Kirill Novik: Final CSCI4229 Project</title>
-<meta http-equiv='content-type' content='text/html; charset=ISO-8859-1'>
-
-<!-- CSS Styles //-->
-<link href='css/style.css'   type='text/css' rel='stylesheet'>
-<link href='css/desert.css'  type='text/css' rel='stylesheet'/>
-<link href='css/colorpicker.css'  type='text/css' rel='stylesheet'/>
-<link href='css/smoothness/jquery-ui-1.8.13.custom.css' type='text/css' rel='stylesheet' />
-
-<!-- JavaScript Libraries //-->
-<script type='text/javascript' src='js/gl-matrix-min.js'></script>
-<script type='text/javascript' src='js/jquery-1.5.1.min.js'></script>
-<script type='text/javascript' src='js/jquery-ui-1.8.13.custom.min.js'></script> 
-<script type='text/javascript' src='js/prettify.js'></script>
-<script type='text/javascript' src='js/utils.js'></script>
-<script type='text/javascript' src='js/colorpicker.js'></script>
-<script type='text/javascript' src='js/codeview.js'></script>
-<script type='text/javascript' src='modules/affine-transformations.js'></script>
-<script type='text/javascript' src='modules/tv.js'></script>
- 
-<script id="shader-vs" type="x-shader/x-vertex">
-/* 
- *  VERTEX SHADER
- *  Many thanks to the "WebGL: Beginner's Guide" Book
- *  This shader implements Goraud shading and Lambert Lighting.
- */
-attribute vec3 aVertexPosition;
-attribute vec3 aVertexNormal;
-attribute vec2 aTextureCoord;
-
-uniform mat4 uMVMatrix;
-uniform mat4 uPMatrix;
-uniform mat4 uNMatrix;
-
-uniform vec3 uLightDirection;   //light direction
-uniform vec4 uLightDiffuse;     //light color
-uniform vec4 uMaterialDiffuse;  //object color
-
-uniform bool uIsTextureEnabled;
-varying vec2 vTextureCoord;
-varying vec4 vFinalColor;
-
-void main(void) {
- //Transformed normal position
- vec3 N = normalize(vec3(uNMatrix * vec4(aVertexNormal, 1.0)));
-    
- //Normalize light to calculate lambertTerm
- vec3 L = normalize(uLightDirection);
- 
- //Lambert's cosine law
- float lambertTerm = dot(N,-L);
- 
- //Final Color
- vec4 Id = uMaterialDiffuse * uLightDiffuse * lambertTerm;
- vFinalColor = Id;
- 
- if (uIsTextureEnabled) {
-     vFinalColor.a = 1.0;
-     vTextureCoord = aTextureCoord;
- }
- if (!uIsTextureEnabled) {
-     vFinalColor.a = 1.0;
- }
-    
-  //Transformed vertex position
-  gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
-  
-}
-</script>
-
-<script id="shader-post-vs" type="x-shader/x-vertex">
-/* 
- *  VERTEX SHADER (POST)
- *  Many thanks to the "WebGL: Beginner's Guide" Book
- *  This shader implements Goraud shading and Lambert Lighting.
- */
-attribute vec3 aVertexPosition;
-attribute vec3 aVertexNormal;
-attribute vec2 aTextureCoord;
-
-uniform mat4 uMVMatrix;
-uniform mat4 uPMatrix;
-uniform mat4 uNMatrix;
-
-uniform vec3 uLightDirection;   //light direction
-uniform vec4 uLightDiffuse;     //light color
-uniform vec4 uMaterialDiffuse;  //object color
-
-uniform bool uIsTextureEnabled;
-varying vec2 vTextureCoord;
-varying vec4 vFinalColor;
-
-void main(void) {
- //Transformed normal position
- vec3 N = normalize(vec3(uNMatrix * vec4(aVertexNormal, 1.0)));
-    
- //Normalize light to calculate lambertTerm
- vec3 L = normalize(uLightDirection);
- 
- //Lambert's cosine law
- float lambertTerm = dot(N,-L);
- 
- //Final Color
- vec4 Id = uMaterialDiffuse * uLightDiffuse * lambertTerm;
- vFinalColor = Id;
- 
- if (uIsTextureEnabled) {
-     vFinalColor.a = 1.0;
-     vTextureCoord = aTextureCoord;
- }
- if (!uIsTextureEnabled) {
-     vFinalColor.a = 1.0;
- }
-    
-  //Transformed vertex position
-  gl_Position = vec4(-aVertexPosition * 2.1, 1.0);
-  
-}
-</script>
-
-
-<script id="shader-fs" type="x-shader/x-fragment">
-/* 
- *  FRAGMENT SHADER (PRIMARY)
- *  Many thanks to the "WebGL: Beginner's Guide" Book
- *  This shader is responsible for texture mapping.
- */
-#ifdef GL_ES
-precision highp float;
-#endif
-
-uniform sampler2D uSampler;
-uniform bool uIsTextureEnabled;
-varying vec2 vTextureCoord;
-varying vec4  vFinalColor;
-
-void main(void)  {
- 
- if (uIsTextureEnabled) {
-     gl_FragColor = texture2D(uSampler, vTextureCoord);
- }
- if (!uIsTextureEnabled) {
-     gl_FragColor = vFinalColor; //texture2D(uSampler, vTextureCoord);
- }
-}
-</script>
-
-<script id="shader-post-fs" type="x-shader/x-fragment">
-/* 
-*  FRAGMENT SHADER (POST PROCESS)
-*  Many thanks to the "WebGL: Beginner's Guide" Book
-*  This shader is responsible for the blur and black&white effects.
-*/
-#ifdef GL_ES
-precision highp float;
-#endif
-
-uniform sampler2D uSampler;
-uniform bool uIsTextureEnabled;
-uniform int uFX; // integer representing a post processing effect to be applied 
-/*
-*  0 - No Effect
-*  1 - Black and White
-*  2 - Wave
-*  3 - Blur
-*/
-// POST PROCESSING PARAMETERS
-uniform float uBlurAmount;
-uniform float uWaveAmount;
-uniform float uTime;
-uniform bool uBW;
-
-varying vec2 vTextureCoord;
-varying vec4  vFinalColor;
-
-vec4 offsetLookup(float xOff, float yOff) {
-    return texture2D(uSampler, vec2(vTextureCoord.x + xOff*0.01, vTextureCoord.y + yOff*0.01));
-}
-
-float rand(vec2 co){
-    return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
-}
-
-void main(void)  {
- vec4 frameColor = offsetLookup(-4.0, 0.0) * 0.05 * uBlurAmount;
-    frameColor += offsetLookup(-3.0, 0.0) * 0.09 * uBlurAmount;
-    frameColor += offsetLookup(-2.0, 0.0) * 0.12 * uBlurAmount;
-    frameColor += offsetLookup(-1.0, 0.0) * 0.15 * uBlurAmount;
-    frameColor += offsetLookup(0.0, 0.0) * 0.16 * uBlurAmount;
-    frameColor += offsetLookup(1.0, 0.0) * 0.15 * uBlurAmount;
-    frameColor += offsetLookup(2.0, 0.0) * 0.12 * uBlurAmount;
-    frameColor += offsetLookup(3.0, 0.0) * 0.09 * uBlurAmount;
-    frameColor += offsetLookup(4.0, 0.0) * 0.05 * uBlurAmount;
-
- vec2 texcoord = vTextureCoord;
- texcoord.x += sin(texcoord.y * 4.0 * 2.0 * 3.14159 * uWaveAmount + uTime) / 100.0;
- vec4 fragment = (texture2D(uSampler, texcoord) + frameColor)/2.0 + rand(vTextureCoord + mod(uTime, 10.0))/5.0;
- if (uBW){
-     gl_FragColor = vec4(fragment.r, fragment.r, fragment.r, 1.0);
- }
- if (!uBW){
-     gl_FragColor = fragment;
- }
-}
-</script>
-
-<script id='code-js' type="text/javascript">
-
-var gl = null; // WebGL context
-var prg = null; // The program (shaders)
-var postPrg = null;
-var c_width = 0; // Variable to store the width of the canvas
-var c_height = 0; // Variable to store the height of the canvas
-
-var mvMatrix = mat4.create(); // The Model-View matrix
-var postMatrix = mat4.create(); // Model-view matrix for post processing
-var pMatrix = mat4.create(); // The projection matrix
-
-/*-----------------------------------------------------*/
-var nMatrix =  mat4.create();       // The normal matrix
-/*-----------------------------------------------------*/
-
-var verticesBuffer;
-var indicesBuffer;
-var screenVerticesBuffer;
-var screenIndicesBuffer;
-var screenNormalsBuffer;
-
-/*-----------------------------------------------------*/
-var tvNormalsBuffer;               //VBO for Normals
-/*-----------------------------------------------------*/
-var screenTextureCoordBuffer;
-
-var vertices;
-var indices;
-/*-----------------------------------------------------*/
-var normals;              //JavaScript Array for Normals
-/*-----------------------------------------------------*/
-var textureCoords;
-var affineTransformationsArray = [];
-
-var time = 0;
-var timeIncrement = 0.05;
-/* MOUSE INTERACTION */
-var mouseX = 0;
-var mouseY = 0;
-
-/* VIDEO TEXTURE */
-var video = document.createElement("video");
-var videoready = false;
-
-/* POST PROCESSING */
-var framebuffer;
-var renderbuffer;
-var blurAmount = 1.0;
-var waveAmount = 1.0;
-var bw = 0;
-
-/* DROPLET PROPERTIES (AFFINE TRANSFORMATIONS)
-*  
-*  Project Location: modules/affine-transformations.js)
-*  Description: an array is created that holds information about
-*  rotation and position of particles
-*/
-var dropletQuantity = 100;
-var speed = 0.01;
-var rotationSpeed = 0.01;
-var spread = 3000;
-
-/*
-* AFFINE TRANSFORMATIONS
-*/
-function initAffineTransformationsArray(){
-	affineTransformationsArray = []; // start with an empty array
-	for (var i = 0; i < dropletQuantity; i++) {
-		affineTransformationsArray[i] = new Array(0, 0, 0, 0, 0, 0);
-		// Random Angles
-		affineTransformationsArray[i][0] = ((Math.random() * 1000) % 360) ; 
-		affineTransformationsArray[i][1] = ((Math.random() * 1000) % 360) ; 
-		affineTransformationsArray[i][2] = ((Math.random() * 1000) % 360) ; 
-		// Random Positions
-		affineTransformationsArray[i][3] = ((Math.random() * 10000) % spread - spread/2) / 1000; 
-		affineTransformationsArray[i][4] = 10-((Math.random() * 10000) % 10000) / 1000; 
-		affineTransformationsArray[i][5] = ((Math.random() * 10000) % spread - spread/2) / 1000; 
-	}
-}
-
-function updateAffineTransformationsArray(){
-	for (var i = 0; i < dropletQuantity; i++) {
-		// Update Angles
-		affineTransformationsArray[i][1] -= rotationSpeed; affineTransformationsArray[i][1] = affineTransformationsArray[i][1] % 360;  // fall
-		// Update Verticeal Position
-		affineTransformationsArray[i][4] -= speed; 
-		if (affineTransformationsArray[i][4] < -5){
-		    affineTransformationsArray[i][4] = 5;
-		}
-	}
-}
-
-
-/**
-* The program contains a series of instructions that tell the Graphic Processing Unit (GPU)
-* what to do with every vertex and fragment that we pass it. 
-* The vertex shader and the fragment shader together are called the program.
-*/
-function initProgram() {
-    var fragmentShader          = utils.getShader(gl, "shader-fs");
-    var vertexShader            = utils.getShader(gl, "shader-vs");
-    var postVertexShader            = utils.getShader(gl, "shader-post-vs");
-    var postShader              = utils.getShader(gl, "shader-post-fs");
-
-    postPrg = gl.createProgram();
-    gl.attachShader(postPrg, postVertexShader);
-    gl.attachShader(postPrg, postShader);
-    gl.linkProgram(postPrg);
-
-    if (!gl.getProgramParameter(postPrg, gl.LINK_STATUS)) {
-        alert("Could not initialise shaders");
-    }
-
-
-    // Locations of Various Resources that "prg" will be Using
-    postPrg.aVertexPosition  =  gl.getAttribLocation(postPrg, "aVertexPosition");
-    postPrg.aVertexNormal    =  gl.getAttribLocation(postPrg, "aVertexNormal");
-    postPrg.aTextureCoord =     gl.getAttribLocation(postPrg, "aTextureCoord");
-    
-    postPrg.uPMatrix         =  gl.getUniformLocation(postPrg, "uPMatrix");
-    postPrg.uMVMatrix        =  gl.getUniformLocation(postPrg, "uMVMatrix");
-    postPrg.uNMatrix         =  gl.getUniformLocation(postPrg, "uNMatrix");
-
-    postPrg.uMaterialDiffuse  = gl.getUniformLocation(postPrg, "uMaterialDiffuse");
-    postPrg.uLightDiffuse     = gl.getUniformLocation(postPrg, "uLightDiffuse");
-    postPrg.uLightDirection   = gl.getUniformLocation(postPrg, "uLightDirection");
-    
-    postPrg.uIsTextureEnabled = gl.getUniformLocation(postPrg, "uIsTextureEnabled");
-    postPrg.samplerUniform    = gl.getUniformLocation(postPrg, "uSampler");
-    
-    postPrg.uWaveAmount = gl.getUniformLocation(postPrg, "uWaveAmount");
-    postPrg.uBlurAmount = gl.getUniformLocation(postPrg, "uBlurAmount");
-    postPrg.uTime       = gl.getUniformLocation(postPrg, "uTime");
-    postPrg.uBW       = gl.getUniformLocation(postPrg, "uBW");
-    
-    prg = gl.createProgram();
-    gl.attachShader(prg, vertexShader);
-    gl.attachShader(prg, fragmentShader);
-    gl.linkProgram(prg);
-
-    if (!gl.getProgramParameter(prg, gl.LINK_STATUS)) {
-        alert("Could not initialise shaders");
-    }
-
-    gl.useProgram(prg);
-    
-    // Locations of Various Resources that "prg" will be Using
-    prg.aVertexPosition  =  gl.getAttribLocation(prg, "aVertexPosition");
-    prg.aVertexNormal    =  gl.getAttribLocation(prg, "aVertexNormal");
-    prg.aTextureCoord =     gl.getAttribLocation(prg, "aTextureCoord");
-    
-    prg.uPMatrix         =  gl.getUniformLocation(prg, "uPMatrix");
-    prg.uMVMatrix        =  gl.getUniformLocation(prg, "uMVMatrix");
-    prg.uNMatrix         =  gl.getUniformLocation(prg, "uNMatrix");
-
-    prg.uMaterialDiffuse  = gl.getUniformLocation(prg, "uMaterialDiffuse");
-    prg.uLightDiffuse     = gl.getUniformLocation(prg, "uLightDiffuse");
-    prg.uLightDirection   = gl.getUniformLocation(prg, "uLightDirection");
-    
-    prg.uIsTextureEnabled = gl.getUniformLocation(prg, "uIsTextureEnabled");
-    prg.samplerUniform    = gl.getUniformLocation(prg, "uSampler");
-}
-
-/*
- * INITIALIZE LIGHTS
- * Description:
- * Pass direction, diffuse color, and material diffuse
- * to the GPU
- */
-function initLights(){
-    gl.uniform3fv(prg.uLightDirection,    [0.0, -1.0, -1.0]);
-    gl.uniform4fv(prg.uLightDiffuse,      [1.0,1.0,1.0,1.0]); 
-    gl.uniform4fv(prg.uMaterialDiffuse,   [0.5,0.5,0.5,1.0]);
-}
-
-/**
-* This function generates SPHERE data and creates the buffers
-*/
-function initBuffers()
-{
-    // Data Necessary to Draw a Plane with Video Texture
-    screenVertices = [-0.5, -0.5, 0, 0.5, -0.5, 0, -0.5, 0.5, 0, 0.5, 0.5, 0];
-	screenIndices = [0, 2, 1, 1, 2, 3];
-	screenNormals = utils.calculateNormals(screenVertices, screenIndices);
-    textureCoords = [
-          0.0, 1.0,
-          1.0, 1.0,
-          0.0, 0.0,
-          1.0, 0.0
-    ];
-	
-	// Data Necessary to Draw a TV object 
-	// (Note: the vertex and index array are located in the "models" folder)
-	normals = utils.calculateNormals(tv.vertices, tv.indices);
-
-    // Vertex Buffer for the Plane with Video Texture
-	screenVerticesBuffer = gl.createBuffer();
-	gl.bindBuffer(gl.ARRAY_BUFFER, screenVerticesBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(screenVertices), gl.STATIC_DRAW);
-	
-	// Normals Buffer for the Plane with Video Texture
-	screenNormalsBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, screenNormalsBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(screenNormals), gl.STATIC_DRAW);
-
-    // Index Buffer for the Plane with Video Texture
-    screenIndicesBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, screenIndicesBuffer);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(screenIndices), gl.STATIC_DRAW);
-    
-    // Texture Coordinates Buffer for the Plane with Video Texture
-    screenTextureCoordBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, screenTextureCoordBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoords), gl.STATIC_DRAW);
-    gl.enableVertexAttribArray(prg.aTextureCoord);
-    gl.uniform1i(prg.samplerUniform, 0);
-	
-    // Vertex Buffer for the TV Object
-    verticesBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, verticesBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(tv.vertices), gl.STATIC_DRAW);
-
-    // Normals Buffer for the TV Object
-    tvNormalsBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, tvNormalsBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.STATIC_DRAW);
-
-    // Indices Buffer for the TV Object
-    indicesBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indicesBuffer);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(tv.indices), gl.STATIC_DRAW);
-}
-
-/* MATRIX OPERATIONS */
-var mvMatrixStack = [];
-
-function mvPushMatrix() {
-    var copy = mat4.create();
-    mat4.set(mvMatrix, copy);
-    mvMatrixStack.push(copy);
-}
-
-function mvPopMatrix() {
-    if (mvMatrixStack.length == 0) {
-        throw "Invalid popMatrix!";
-    }
-    mvMatrix = mvMatrixStack.pop();
-}
-
-/* TEXTURE OPERATIONS */
-function handleLoadedTexture(texture) {
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T,     gl.CLAMP_TO_EDGE);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S,     gl.CLAMP_TO_EDGE);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-	gl.generateMipmap(gl.TEXTURE_2D);
-    gl.bindTexture(gl.TEXTURE_2D, null);
-}
-
-
-var videoTexture;
-var backgroundTexture;
-var polaroidTexture00;
-var polaroidTexture01;
-var polaroidTexture02;
-var polaroidTexture03;
-var framebufferTexture;
-
-function initBackgroundTexture() {
-    backgroundTexture = gl.createTexture();
-    backgroundTexture.image = new Image();
-    backgroundTexture.image.onload = function() {
-        handleLoadedTexture(backgroundTexture);
-    };
-    backgroundTexture.image.src = "textures/bg.jpg";
-}
-
-function initPolaroidTexture00() {
-    polaroidTexture00 = gl.createTexture();
-    polaroidTexture00.image = new Image();
-    polaroidTexture00.image.onload = function() {
-        handleLoadedTexture(polaroidTexture00);
-    }
-    polaroidTexture00.image.src = "textures/polaroid04.jpg";
-}
-
-function initPolaroidTexture01() {
-    polaroidTexture01 = gl.createTexture();
-    polaroidTexture01.image = new Image();
-    polaroidTexture01.image.onload = function() {
-        handleLoadedTexture(polaroidTexture01);
-    }
-    polaroidTexture01.image.src = "textures/polaroid.jpg";
-}
-
-
-function initPolaroidTexture02() {
-    polaroidTexture02 = gl.createTexture();
-    polaroidTexture02.image = new Image();
-    polaroidTexture02.image.onload = function() {
-        handleLoadedTexture(polaroidTexture02);
-    }
-    polaroidTexture02.image.src = "textures/polaroid02.png";
-}
-
-
-function initPolaroidTexture03() {
-    polaroidTexture03 = gl.createTexture();
-    polaroidTexture03.image = new Image();
-    polaroidTexture03.image.onload = function() {
-        handleLoadedTexture(polaroidTexture03);
-    }
-    polaroidTexture03.image.src = "textures/polaroid03.jpg";
-}
-
-function initTexture() {
-    videoTexture = gl.createTexture();
-    videoTexture.image = new Image();
-    videoTexture.image.onload = function () {
-        console.log("loaded video texture");
-        handleLoadedTexture(videoTexture);
-        
-    };
-
-    videoTexture.image.src = "textures/polaroid.jpg";
-}
-
-function initFramebuffer() {
-    var width = 2048;
-    var height = 2048;
-    
-    //1. Init Color Texture
-    framebufferTexture = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, framebufferTexture);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-    
-    //2. Init Render Buffer
-    renderbuffer = gl.createRenderbuffer();
-    gl.bindRenderbuffer(gl.RENDERBUFFER, renderbuffer);
-    gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, width,
-    height);
-    
-    gl.bindBuffer(gl.ARRAY_BUFFER, null);
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-    
-    //3. Init Frame Buffer
-    framebuffer = gl.createFramebuffer();
-    gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0,
-    gl.TEXTURE_2D, framebufferTexture, 0);
-    gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT,
-    gl.RENDERBUFFER, renderbuffer);
-    
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, framebufferTexture, 0);
-    gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, renderbuffer);
-
-    gl.bindTexture(gl.TEXTURE_2D, null);
-    gl.bindRenderbuffer(gl.RENDERBUFFER, null);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-}
-
-/**
-* Main rendering function. Called every 500ms according to WebGLStart function (see below)
-*/
-function drawScene() {
-    /////////////////////////////////////////////////////////
-	// BEGINNING RENDERING TO FRAMEBUFFER 
-	/////////////////////////////////////////////////////////
-    gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
-    gl.useProgram(prg);
-    gl.clearColor(0.0, 0.0, 0.0, 1.0);//0.9,0.9,0.9, 1.0);
-    
-    gl.clearDepth(100.0);
-    gl.enable(gl.DEPTH_TEST);
-    gl.depthFunc(gl.LEQUAL);
-    
-    gl.viewport(0, 0, 2048, 2048);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    mat4.perspective(45, 2048 / 2048, 0.1, 10000.0, pMatrix);
-    
-    mat4.identity(mvMatrix);
-    mat4.translate(mvMatrix, [0.0, -1.3, -3.0]); // Sets the camera to a reasonable distance to view the part
-    mat4.rotate(mvMatrix, -3.14*29/180 + mouseY/10000, [1, 0, 0]); // Camera rotates slightly based on where the mouse cursor is 
-    mat4.rotate(mvMatrix, mouseX/10000, [0, 1, 0]);
-    
-    try{
-        gl.enableVertexAttribArray(prg.aVertexPosition);
-        gl.enableVertexAttribArray(prg.aVertexNormal);
-	    
-        /*
-         * DRAWING TV
-         */
-	    mvPushMatrix();
-		
-		/*
-         * DRAWING SCREEN (PLANE WITH VIDEO TEXTURE)
-         */
-	    gl.enableVertexAttribArray(prg.aTextureCoord);
-		
-		mat4.translate(mvMatrix, [-0.0, 0.65, 0.49]);
-		mat4.rotate(mvMatrix, 3.14*30/180, [0,1,0]);
-		mat4.scale(mvMatrix, [1.4, 0.95, 0.0]);
-		
-		gl.bindBuffer(gl.ARRAY_BUFFER, screenVerticesBuffer);
-		gl.vertexAttribPointer(prg.aVertexPosition, 3, gl.FLOAT, false, 0, 0);
-
-		gl.bindBuffer(gl.ARRAY_BUFFER, screenNormalsBuffer);
-		gl.vertexAttribPointer(prg.aVertexNormal,3,gl.FLOAT, false, 0,0);
-        
-        gl.uniform1i(prg.uIsTextureEnabled, true); 
-        
-        gl.bindBuffer(gl.ARRAY_BUFFER, screenTextureCoordBuffer);
-        gl.vertexAttribPointer(prg.aTextureCoord, 2, gl.FLOAT, false, 0, 0);
-        
-        if (videoTexture){
-            //gl.activeTexture(gl.TEXTURE0);
-		    gl.bindTexture(gl.TEXTURE_2D, videoTexture);   
-        }
-        
-		if (videoready)
-		{
-			try
-			{	// upload the video frame
-				gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, video);
-			}
-			catch(e)
-			{  // log only the first few errors 
-			}
-		}
-
-        gl.uniformMatrix4fv(prg.uMVMatrix, false, mvMatrix);
-    	gl.uniformMatrix4fv(prg.uPMatrix, false, pMatrix);
-        
-		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, screenIndicesBuffer);
-		gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT,0);
-        
-		gl.bindBuffer(gl.ARRAY_BUFFER, null);
-		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-
-		mvPopMatrix();
-		gl.bindTexture(gl.TEXTURE_2D, null);
-		
-		/*
-		* BACKGROUND
-		*/
-		mvPushMatrix();
-		mat4.translate(mvMatrix, [0, 4, -4]);
-		mat4.rotate(mvMatrix, 3.14*29/180, [1, 0, 0]);
-		mat4.scale(mvMatrix, [20, 10, 10]);
-		
-		gl.bindBuffer(gl.ARRAY_BUFFER, screenVerticesBuffer);
-		gl.vertexAttribPointer(prg.aVertexPosition, 3, gl.FLOAT, false, 0, 0);
-
-		gl.bindBuffer(gl.ARRAY_BUFFER, screenNormalsBuffer);
-		gl.vertexAttribPointer(prg.aVertexNormal,3,gl.FLOAT, false, 0,0);
-        
-        gl.uniform1i(prg.uIsTextureEnabled, true); 
-        
-        gl.bindBuffer(gl.ARRAY_BUFFER, screenTextureCoordBuffer);
-        gl.vertexAttribPointer(prg.aTextureCoord, 2, gl.FLOAT, false, 0, 0);
-
-		gl.bindTexture(gl.TEXTURE_2D, backgroundTexture);
-		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, backgroundTexture.image);
-
-        gl.uniformMatrix4fv(prg.uMVMatrix, false, mvMatrix);
-    	gl.uniformMatrix4fv(prg.uPMatrix, false, pMatrix);
-        
-		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, screenIndicesBuffer);
-		gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT,0);
-        
-		gl.bindBuffer(gl.ARRAY_BUFFER, null);
-		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-
-		mvPopMatrix();
-		gl.bindTexture(gl.TEXTURE_2D, null);
-		
-		/* 
-		 * RAIN 
-		 */
-        gl.bindTexture(gl.TEXTURE_2D, polaroidTexture00);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, polaroidTexture00.image);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
-        gl.generateMipmap(gl.TEXTURE_2D);
-		
-		for (var i=0; i < dropletQuantity/4; i++){
-			mvPushMatrix();
-			mat4.translate(mvMatrix, [affineTransformationsArray[i][3], affineTransformationsArray[i][4], affineTransformationsArray[i][5]]);
-			mat4.rotate(mvMatrix, affineTransformationsArray[i][0], [1, 0, 0]);
-			mat4.rotate(mvMatrix, affineTransformationsArray[i][1], [0, 1, 0]);
-			mat4.rotate(mvMatrix, affineTransformationsArray[i][2], [0, 0, 1]);
-			mat4.scale(mvMatrix, [0.3, 0.3, 0.3]);
-			
-			gl.bindBuffer(gl.ARRAY_BUFFER, screenVerticesBuffer);
-			gl.vertexAttribPointer(prg.aVertexPosition, 3, gl.FLOAT, false, 0, 0);
-
-			gl.bindBuffer(gl.ARRAY_BUFFER, screenNormalsBuffer);
-			gl.vertexAttribPointer(prg.aVertexNormal,3,gl.FLOAT, false, 0,0);
-            
-            gl.bindBuffer(gl.ARRAY_BUFFER, screenTextureCoordBuffer);
-            gl.vertexAttribPointer(prg.aTextureCoord, 2, gl.FLOAT, false, 0, 0);
-    
-            gl.uniformMatrix4fv(prg.uMVMatrix, false, mvMatrix);
-        	gl.uniformMatrix4fv(prg.uPMatrix, false, pMatrix);
-            
-			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, screenIndicesBuffer);
-			gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT,0);
-            
-			gl.bindBuffer(gl.ARRAY_BUFFER, null);
-			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-			
-			mvPopMatrix();
-			
-		}
-		gl.bindTexture(gl.TEXTURE_2D, null);
-		
-        gl.bindTexture(gl.TEXTURE_2D, polaroidTexture01);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, polaroidTexture01.image);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
-        gl.generateMipmap(gl.TEXTURE_2D);
-		
-		for (var i = dropletQuantity/4; i < dropletQuantity/2; i++){
-			mvPushMatrix();
-			mat4.translate(mvMatrix, [affineTransformationsArray[i][3], affineTransformationsArray[i][4], affineTransformationsArray[i][5]]);
-			mat4.rotate(mvMatrix, affineTransformationsArray[i][0], [1, 0, 0]);
-			
-			mat4.rotate(mvMatrix, affineTransformationsArray[i][1], [0, 1, 0]);
-			mat4.rotate(mvMatrix, affineTransformationsArray[i][2], [0, 0, 1]);
-			mat4.scale(mvMatrix, [0.3, 0.3, 0.3]);
-			
-			gl.bindBuffer(gl.ARRAY_BUFFER, screenVerticesBuffer);
-			gl.vertexAttribPointer(prg.aVertexPosition, 3, gl.FLOAT, false, 0, 0);
-
-			gl.bindBuffer(gl.ARRAY_BUFFER, screenNormalsBuffer);
-			gl.vertexAttribPointer(prg.aVertexNormal,3,gl.FLOAT, false, 0,0);
-            
-            gl.bindBuffer(gl.ARRAY_BUFFER, screenTextureCoordBuffer);
-            gl.vertexAttribPointer(prg.aTextureCoord, 2, gl.FLOAT, false, 0, 0);
-            
-            gl.uniformMatrix4fv(prg.uMVMatrix, false, mvMatrix);
-        	gl.uniformMatrix4fv(prg.uPMatrix, false, pMatrix);
- 
-			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, screenIndicesBuffer);
-			gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT,0);
-            
-			gl.bindBuffer(gl.ARRAY_BUFFER, null);
-			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-
-			mvPopMatrix();
-		}
-		gl.bindTexture(gl.TEXTURE_2D, null);
-		
-		gl.disableVertexAttribArray(prg.aTextureCoord);
-		mvPushMatrix();
-		mat4.translate(mvMatrix, [0, 0, 0]);
-		mat4.rotate(mvMatrix, 3.14*30/180, [0, 1, 0]);
-		mat4.scale(mvMatrix, [0.6, 0.6, 0.6]);
-		
-		gl.bindBuffer(gl.ARRAY_BUFFER, verticesBuffer);
-		gl.vertexAttribPointer(prg.aVertexPosition, 3, gl.FLOAT, false, 0, 0);
-
-		gl.bindBuffer(gl.ARRAY_BUFFER, tvNormalsBuffer);
-		gl.vertexAttribPointer(prg.aVertexNormal,3,gl.FLOAT, false, 0,0);
-        
-        gl.uniformMatrix4fv(prg.uMVMatrix, false, mvMatrix);
-    	gl.uniformMatrix4fv(prg.uPMatrix, false, pMatrix);
-    	
-    	gl.uniform1i(prg.uIsTextureEnabled, false); 
-		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indicesBuffer);
-		gl.drawElements(gl.TRIANGLES, tv.indices.length, gl.UNSIGNED_SHORT,0);
-		
-		gl.bindBuffer(gl.ARRAY_BUFFER, null);
-		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-		
-		mat4.set(mvMatrix, nMatrix);
-        mat4.inverse(nMatrix);
-        mat4.transpose(nMatrix);
-        
-        gl.uniformMatrix4fv(prg.uNMatrix, false, nMatrix);
-		gl.flush();
-		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-		/////////////////////////////////////////////////////////
-		// END OF RENDERING TO FRAMEBUFFER 
-		/////////////////////////////////////////////////////////
-		
-		/////////////////////////////////////////////////////////
-		// BEGINING DRAWING FRAMEBUFFER ON A PLANE
-		/////////////////////////////////////////////////////////
-		
-		
-		
-        gl.useProgram(postPrg);
-		gl.clearColor(0.0, 0.0, 0.0, 1.0);//0.9,0.9,0.9, 1.0);
-        gl.clearDepth(100.0);
-        gl.enable(gl.DEPTH_TEST);
-        gl.depthFunc(gl.LEQUAL);
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        //mat4.perspective(45, c_width / c_height, 0.1, 10000.0, pMatrix);
-        gl.viewport(0, 0, c_width, c_height);
-        gl.enableVertexAttribArray(postPrg.aTextureCoord);
-        
-        mat4.identity(postMatrix);
-        
-        gl.uniformMatrix4fv(postPrg.uMVMatrix, false, postMatrix);
-    	gl.uniformMatrix4fv(postPrg.uPMatrix, false, pMatrix);
-    	gl.uniform1f(postPrg.uTime, time);
-    	
-    	
-    	
-        gl.bindBuffer(gl.ARRAY_BUFFER, screenVerticesBuffer);
-		gl.vertexAttribPointer(postPrg.aVertexPosition, 3, gl.FLOAT, false, 0, 0);
-
-		gl.bindBuffer(gl.ARRAY_BUFFER, screenNormalsBuffer);
-		gl.vertexAttribPointer(postPrg.aVertexNormal,3,gl.FLOAT, false, 0,0);
-        
-        gl.uniform1i(postPrg.uIsTextureEnabled, true); 
-        
-        gl.bindBuffer(gl.ARRAY_BUFFER, screenTextureCoordBuffer);
-        gl.vertexAttribPointer(postPrg.aTextureCoord, 2, gl.FLOAT, false, 0, 0);
-
-		gl.bindTexture(gl.TEXTURE_2D, framebufferTexture);
-
-        gl.uniformMatrix4fv(postPrg.uMVMatrix, false, mvMatrix);
-    	gl.uniformMatrix4fv(postPrg.uPMatrix, false, pMatrix);
-        
-		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, screenIndicesBuffer);
-		gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT,0);
-        
-		gl.bindBuffer(gl.ARRAY_BUFFER, null);
-		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-
-		gl.flush();
-    }
-    catch(err){
-        alert(err);
-    }
-	
-    
-	updateAffineTransformationsArray();
-}
-
-/**
-* Render Loop
-*/
-function renderLoop() {
-    requestAnimFrame(renderLoop);
-    drawScene();
-    time += timeIncrement;
-}
-
-/**
-* Entry point. This function is invoked when the page is loaded
-*/
-function runWebGLApp() {
-    
-	initAffineTransformationsArray();
-    //Obtains a WebGL context
-    gl = utils.getGLContext("canvas-element-id");
-    //Initializes the program (shaders) 
-    initProgram();
-    //Initializes the buffers that we are going to use
-    initBuffers();
-    //Initializes lights
-    initLights();
-
-    // load the video
-	video.autoplay = true;
-	video.loop = true;
-	video.oncanplay = function(){ videoready=true; }
-	
-	video.onerror = function()
-	{
-		var err = "unknown error";
-		
-		switch(video.error.code)
-		{
-			case 1: err = "video loading aborted"; break;
-			case 2: err = "network loading error"; break;
-			case 3: err = "video decoding failed / corrupted data or unsupported codec"; break;
-			case 4: err = "video not supported"; break;
-		}; 
-		
-		log("Error: " + err + " (errorcode="+video.error.code+")", "color:red;");
-	};
-	
-	video.src = "video/pictures.mp4";
-
-	// try to disable the iPhone video fullscreen mode:
-	video.setAttribute("playsinline", "");
-	video.setAttribute("webkit-playsinline", "");
-
-	// try to start playing
-	video.play();
-    initTexture();
-    initBackgroundTexture();
-    initPolaroidTexture00();
-    initPolaroidTexture01();
-    initPolaroidTexture02();
-    initPolaroidTexture03();
-    initFramebuffer();
-    
-    // Init Post Processing 
-    gl.useProgram(postPrg);
-    gl.uniform1f(postPrg.uBlurAmount, blurAmount);
-    gl.uniform1f(postPrg.uWaveAmount, waveAmount);
-    gl.uniform1i(postPrg.uBW, 0);
-    //Renders the scene!
-    renderLoop();
-    
-    // Capture Mouse Position
-    $("#canvas-element-id").mousemove(function( event ) {
-      mouseX = event.pageX;
-      mouseY = screen.height - event.pageY;
-    });
-    
-    $("#bw-value").click(function(){
-        bw = !bw;
-        updateBlackWhite(); 
-    });
-    
-    $("#play").click(function(){
-        video.play();
-    });
-    
-    $("#pause").click(function(){
-        video.pause();
-    });
-}
-
-
-</script>
-</head>
-
-<body onLoad='runWebGLApp()'>
-<div id='top'>
- <h1>Kirill Novik CSCI 4229 Final Project</h1>
- <h2>"The Cure - Pictures of You" Visualization</h2>
- <div id='logo-packt'><img src='packt.gif'/></div>
-</div>
-
-<div id='contents'>
- <div id='canvasContainer'>
-  <canvas id='canvas-element-id' width='480' height='400'>
-   Your browser does not support the HTML5 canvas element.
-  </canvas>
- </div>
-    <div id='controls'>
-        
+  <head>
+    <title>Kirill Novik: Final CSCI4229 Project</title>
+    <meta http-equiv="content-type" content="text/html; charset=ISO-8859-1" />
+
+    <!-- CSS Styles //-->
+    <link href="css/style.css" type="text/css" rel="stylesheet" />
+    <link href="css/desert.css" type="text/css" rel="stylesheet" />
+    <link href="css/colorpicker.css" type="text/css" rel="stylesheet" />
+    <link
+      href="css/smoothness/jquery-ui-1.8.13.custom.css"
+      type="text/css"
+      rel="stylesheet"
+    />
+
+    <!-- JavaScript Libraries //-->
+    <script type="text/javascript" src="js/gl-matrix-min.js"></script>
+    <script type="text/javascript" src="js/jquery-1.5.1.min.js"></script>
+    <script
+      type="text/javascript"
+      src="js/jquery-ui-1.8.13.custom.min.js"
+    ></script>
+    <script type="text/javascript" src="js/prettify.js"></script>
+    <script type="text/javascript" src="js/utils.js"></script>
+    <script type="text/javascript" src="js/colorpicker.js"></script>
+    <script type="text/javascript" src="js/codeview.js"></script>
+    <script
+      type="text/javascript"
+      src="modules/affine-transformations.js"
+    ></script>
+    <script type="text/javascript" src="modules/tv.js"></script>
+
+    <!-- LOGIC -->
+    <script src="./logic/textures.js"></script>
+    <script src="./logic/framebuffer.js"></script>
+    <script src="./logic/droplets.js"></script>
+    <script src="./logic/index.js"></script>
+    <script src="./logic/logic.js"></script>
+    <script src="./logic/scene.js"></script>
+    <script src="./intialization.js"></script>
+  </head>
+
+  <body>
+    <div id="top">
+      <h1>Kirill Novik CSCI 4229 Final Project</h1>
+      <h2>"The Cure - Pictures of You" Visualization</h2>
+      <div id="logo-packt"><img src="packt.gif" /></div>
     </div>
-</div>
 
-<div id='bottom'>
-<table>
-<tr>
-<td>
-<table>
-  <caption>Light Direction</caption>
-  <tr>
-   <td>X:</td><td id='slider-x-value' width='30px' align='center'>0.0</td><td width='150px'><div id='slider-x'/></td>
-  </tr>
-  <tr>
-   <td>Y:</td> <td id='slider-y-value'  width='30px' align='center'>-1.0</td><td width='150px'><div id='slider-y'/></td>
-  </tr>
-  <tr>
-   <td>Z:</td> <td id='slider-z-value'  width='30px' align='center'>-1.0</td><td width='150px'><div id='slider-z'/></td>
-  </tr>
- </table>
-</td>
-<td>
-   <table>
-   <tr>
-             <td colspan="2"> Sphere Color (Material Diffuse Term:</td>
-             <td>
-                  <div id='colorSelectorSphere' class='colorSelector'><div style='background-color:rgb(128,204,26)'></div></div>
-             </td>
-    </tr>
-    <tr>
-         <td align='right'>Light Diffuse Term:</td>
-         <td id='slider-ld-value'  width='30px'>1.0</td>
-         <td width='150px' colspan='3'><div id='slider-ld'/></td>
-     </tr>
-     <tr>
-         <td align='right'>Wave Amount:</td>
-         <td id='slider-wave-value'  width='30px'>1.0</td>
-         <td width='150px' colspan='3'><div id='slider-wave'/></td>
-     </tr>
-     <tr>
-         <td align='right'>Black and White:</td>
-         <td  width='30px'><button id='bw-value'>Update</button></td>
-     </tr>
-     <tr>
-         <td align='right'>Video Playback:</td>
-         <td  width='30px'><button id='play'>Play</button></td>
-         <td  width='30px'><button id='pause'>Pause</button></td>
-     </tr>
-    </table>
-</td>
-</tr>
-</table>
-</div>
-<script>cview.run(cview.MODE_VIEW_AND_CODE);</script>
+    <div id="contents">
+      <div id="canvasContainer">
+        <canvas id="canvas-element-id" width="480" height="400">
+          Your browser does not support the HTML5 canvas element.
+        </canvas>
+      </div>
+      <div id="controls"></div>
+    </div>
 
-<script>
-
-function updateLightDiffuseTerm(){
- gl.useProgram(prg);
- var ld = $('#slider-ld').slider("value");
- gl.uniform4fv(prg.uLightDiffuse,[ld,ld,ld,1.0]);
- $('#slider-ld-value').html(ld);
-}
-
-$('#slider-ld').slider({value:1.0, min:-0.01, max:1.01, step:0.01, slide:updateLightDiffuseTerm});
-
-function updateBlur(){
- gl.useProgram(postPrg);
- var ba = $('#slider-blur').slider("value");
- gl.uniform1f(postPrg.uBlurAmount, ba);
- $('#slider-blur-value').html(ba);
-}
-
-$('#slider-blur').slider({value:1.0, min:1.0, max:5.00, step:0.1, slide:updateBlur});
-
-function updateBlackWhite(){
- gl.useProgram(postPrg);
- if (bw == 1) gl.uniform1i(postPrg.uBW, 1);
- else gl.uniform1f(postPrg.uBW, 0);
-}
-
-function updateWave(){
- gl.useProgram(postPrg);
- var wa = $('#slider-wave').slider("value");
- gl.uniform1f(postPrg.uWaveAmount, wa);
- $('#slider-wave-value').html(wa);
-}
-
-$('#slider-wave').slider({value:1.0, min:1.0, max:5.00, step:0.1, slide:updateWave});
-
-function updateLightDirection(){
-   gl.useProgram(prg);
-   var x = $('#slider-x').slider("value");
-   var y = $('#slider-y').slider("value");
-   var z = $('#slider-z').slider("value");
-   gl.uniform3fv(prg.uLightDirection, [x,y,z]);
-   $('#slider-x-value').html(x);
-   $('#slider-y-value').html(y);
-   $('#slider-z-value').html(z);
-}
-
-$('#slider-x').slider({value:0.0, min:-1.01, max:1.01, step:0.01, slide:updateLightDirection});
-$('#slider-y').slider({value:-1.0, min:-1.01, max:1.01, step:0.01, slide:updateLightDirection});
-$('#slider-z').slider({value:-1.0, min:-1.01, max:1.01, step:0.01, slide:updateLightDirection});
-
-function updateObjectColor(r,g,b){
-    gl.useProgram(prg);
-    gl.uniform4fv(prg.uMaterialDiffuse,[r,g,b,1.0]); 
-}
-
-$('#colorSelectorSphere').ColorPicker({
-    onSubmit: function(hsb, hex, rgb, el) {
-   $(el).val(hex);
-   $(el).ColorPickerHide();
-   
- },
- color: '#555555',
-    onShow: function (colpkr) {
-        $(colpkr).fadeIn(500);
-        return false;
-    },
-    onHide: function (colpkr) {
-        $(colpkr).fadeOut(500);
-        return false;
-    },
-    onChange: function (hsb, hex, rgb) {
-        $('#colorSelectorSphere div').css('backgroundColor', '#' + hex);
-        updateObjectColor(rgb.r/256,rgb.g/256,rgb.b/256);
-    },
-    
-    onBeforeShow: function (colpkr) {
-   $(colpkr).ColorPickerSetColor('rgb(0.5,0.8,0.1)');
-  }
- });
-
-</script>
-<audio id="audio" src="pics.mp3" preload="auto"></audio>
-</body>
+    <div id="bottom">
+      <table>
+        <tr>
+          <td>
+            <table>
+              <caption>
+                Light Direction
+              </caption>
+              <tr>
+                <td>X:</td>
+                <td id="slider-x-value" width="30px" align="center">0.0</td>
+                <td width="150px"><div id="slider-x" /></td>
+              </tr>
+              <tr>
+                <td>Y:</td>
+                <td id="slider-y-value" width="30px" align="center">-1.0</td>
+                <td width="150px"><div id="slider-y" /></td>
+              </tr>
+              <tr>
+                <td>Z:</td>
+                <td id="slider-z-value" width="30px" align="center">-1.0</td>
+                <td width="150px"><div id="slider-z" /></td>
+              </tr>
+            </table>
+          </td>
+          <td>
+            <table>
+              <tr>
+                <td colspan="2">Sphere Color (Material Diffuse Term:</td>
+                <td>
+                  <div id="colorSelectorSphere" class="colorSelector">
+                    <div style="background-color: rgb(128, 204, 26)"></div>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td align="right">Light Diffuse Term:</td>
+                <td id="slider-ld-value" width="30px">1.0</td>
+                <td width="150px" colspan="3"><div id="slider-ld" /></td>
+              </tr>
+              <tr>
+                <td align="right">Wave Amount:</td>
+                <td id="slider-wave-value" width="30px">1.0</td>
+                <td width="150px" colspan="3"><div id="slider-wave" /></td>
+              </tr>
+              <tr>
+                <td align="right">Black and White:</td>
+                <td width="30px"><button id="bw-value">Update</button></td>
+              </tr>
+              <tr>
+                <td align="right">Video Playback:</td>
+                <td width="30px"><button id="play">Play</button></td>
+                <td width="30px"><button id="pause">Pause</button></td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </div>
+    <script>
+      cview.run(cview.MODE_VIEW_AND_CODE);
+    </script>
+    <script src="./ui.js"></script>
+  </body>
 </html>
