@@ -68,71 +68,78 @@ var framebufferTexture;
  * what to do with every vertex and fragment that we pass it.
  * The vertex shader and the fragment shader together are called the program.
  */
-function initProgram() {
-  var fragmentShader = utils.getShader(gl, "shader-fs");
-  var vertexShader = utils.getShader(gl, "shader-vs");
-  var postVertexShader = utils.getShader(gl, "shader-post-vs");
-  var postShader = utils.getShader(gl, "shader-post-fs");
+function initProgramWithContext(glContext) {
+  var fragmentShader = utils.getShader(glContext, "shader-fs");
+  var vertexShader = utils.getShader(glContext, "shader-vs");
+  var postVertexShader = utils.getShader(glContext, "shader-post-vs");
+  var postShader = utils.getShader(glContext, "shader-post-fs");
 
-  postPrg = gl.createProgram();
-  gl.attachShader(postPrg, postVertexShader);
-  gl.attachShader(postPrg, postShader);
-  gl.linkProgram(postPrg);
+  const programs = {
+    postPrg: glContext.createProgram(),
+    prg: glContext.createProgram()
+  };
 
-  if (!gl.getProgramParameter(postPrg, gl.LINK_STATUS)) {
-    alert("Could not initialise shaders");
+  // Initialize post program
+  glContext.attachShader(programs.postPrg, postVertexShader);
+  glContext.attachShader(programs.postPrg, postShader);
+  glContext.linkProgram(programs.postPrg);
+
+  if (!glContext.getProgramParameter(programs.postPrg, glContext.LINK_STATUS)) {
+    throw new Error("Could not initialise post shaders");
   }
 
   // Locations of Various Resources that "prg" will be Using
-  postPrg.aVertexPosition = gl.getAttribLocation(postPrg, "aVertexPosition");
-  postPrg.aVertexNormal = gl.getAttribLocation(postPrg, "aVertexNormal");
-  postPrg.aTextureCoord = gl.getAttribLocation(postPrg, "aTextureCoord");
+  programs.postPrg.aVertexPosition = glContext.getAttribLocation(programs.postPrg, "aVertexPosition");
+  programs.postPrg.aVertexNormal = glContext.getAttribLocation(programs.postPrg, "aVertexNormal");
+  programs.postPrg.aTextureCoord = glContext.getAttribLocation(programs.postPrg, "aTextureCoord");
 
-  postPrg.uPMatrix = gl.getUniformLocation(postPrg, "uPMatrix");
-  postPrg.uMVMatrix = gl.getUniformLocation(postPrg, "uMVMatrix");
-  postPrg.uNMatrix = gl.getUniformLocation(postPrg, "uNMatrix");
+  programs.postPrg.uPMatrix = glContext.getUniformLocation(programs.postPrg, "uPMatrix");
+  programs.postPrg.uMVMatrix = glContext.getUniformLocation(programs.postPrg, "uMVMatrix");
+  programs.postPrg.uNMatrix = glContext.getUniformLocation(programs.postPrg, "uNMatrix");
 
-  postPrg.uMaterialDiffuse = gl.getUniformLocation(postPrg, "uMaterialDiffuse");
-  postPrg.uLightDiffuse = gl.getUniformLocation(postPrg, "uLightDiffuse");
-  postPrg.uLightDirection = gl.getUniformLocation(postPrg, "uLightDirection");
+  programs.postPrg.uMaterialDiffuse = glContext.getUniformLocation(programs.postPrg, "uMaterialDiffuse");
+  programs.postPrg.uLightDiffuse = glContext.getUniformLocation(programs.postPrg, "uLightDiffuse");
+  programs.postPrg.uLightDirection = glContext.getUniformLocation(programs.postPrg, "uLightDirection");
 
-  postPrg.uIsTextureEnabled = gl.getUniformLocation(
-    postPrg,
+  programs.postPrg.uIsTextureEnabled = glContext.getUniformLocation(
+    programs.postPrg,
     "uIsTextureEnabled"
   );
-  postPrg.samplerUniform = gl.getUniformLocation(postPrg, "uSampler");
+  programs.postPrg.samplerUniform = glContext.getUniformLocation(programs.postPrg, "uSampler");
 
-  postPrg.uWaveAmount = gl.getUniformLocation(postPrg, "uWaveAmount");
-  postPrg.uBlurAmount = gl.getUniformLocation(postPrg, "uBlurAmount");
-  postPrg.uTime = gl.getUniformLocation(postPrg, "uTime");
-  postPrg.uBW = gl.getUniformLocation(postPrg, "uBW");
+  programs.postPrg.uWaveAmount = glContext.getUniformLocation(programs.postPrg, "uWaveAmount");
+  programs.postPrg.uBlurAmount = glContext.getUniformLocation(programs.postPrg, "uBlurAmount");
+  programs.postPrg.uTime = glContext.getUniformLocation(programs.postPrg, "uTime");
+  programs.postPrg.uBW = glContext.getUniformLocation(programs.postPrg, "uBW");
 
-  prg = gl.createProgram();
-  gl.attachShader(prg, vertexShader);
-  gl.attachShader(prg, fragmentShader);
-  gl.linkProgram(prg);
+  // Initialize main program
+  glContext.attachShader(programs.prg, vertexShader);
+  glContext.attachShader(programs.prg, fragmentShader);
+  glContext.linkProgram(programs.prg);
 
-  if (!gl.getProgramParameter(prg, gl.LINK_STATUS)) {
-    alert("Could not initialise shaders");
+  if (!glContext.getProgramParameter(programs.prg, glContext.LINK_STATUS)) {
+    throw new Error("Could not initialise main shaders");
   }
 
-  gl.useProgram(prg);
+  glContext.useProgram(programs.prg);
 
   // Locations of Various Resources that "prg" will be Using
-  prg.aVertexPosition = gl.getAttribLocation(prg, "aVertexPosition");
-  prg.aVertexNormal = gl.getAttribLocation(prg, "aVertexNormal");
-  prg.aTextureCoord = gl.getAttribLocation(prg, "aTextureCoord");
+  programs.prg.aVertexPosition = glContext.getAttribLocation(programs.prg, "aVertexPosition");
+  programs.prg.aVertexNormal = glContext.getAttribLocation(programs.prg, "aVertexNormal");
+  programs.prg.aTextureCoord = glContext.getAttribLocation(programs.prg, "aTextureCoord");
 
-  prg.uPMatrix = gl.getUniformLocation(prg, "uPMatrix");
-  prg.uMVMatrix = gl.getUniformLocation(prg, "uMVMatrix");
-  prg.uNMatrix = gl.getUniformLocation(prg, "uNMatrix");
+  programs.prg.uPMatrix = glContext.getUniformLocation(programs.prg, "uPMatrix");
+  programs.prg.uMVMatrix = glContext.getUniformLocation(programs.prg, "uMVMatrix");
+  programs.prg.uNMatrix = glContext.getUniformLocation(programs.prg, "uNMatrix");
 
-  prg.uMaterialDiffuse = gl.getUniformLocation(prg, "uMaterialDiffuse");
-  prg.uLightDiffuse = gl.getUniformLocation(prg, "uLightDiffuse");
-  prg.uLightDirection = gl.getUniformLocation(prg, "uLightDirection");
+  programs.prg.uMaterialDiffuse = glContext.getUniformLocation(programs.prg, "uMaterialDiffuse");
+  programs.prg.uLightDiffuse = glContext.getUniformLocation(programs.prg, "uLightDiffuse");
+  programs.prg.uLightDirection = glContext.getUniformLocation(programs.prg, "uLightDirection");
 
-  prg.uIsTextureEnabled = gl.getUniformLocation(prg, "uIsTextureEnabled");
-  prg.samplerUniform = gl.getUniformLocation(prg, "uSampler");
+  programs.prg.uIsTextureEnabled = glContext.getUniformLocation(programs.prg, "uIsTextureEnabled");
+  programs.prg.samplerUniform = glContext.getUniformLocation(programs.prg, "uSampler");
+
+  return programs;
 }
 
 /*
@@ -141,98 +148,107 @@ function initProgram() {
  * Pass direction, diffuse color, and material diffuse
  * to the GPU
  */
-function initLights() {
-  gl.uniform3fv(prg.uLightDirection, [0.0, -1.0, -1.0]);
-  gl.uniform4fv(prg.uLightDiffuse, [1.0, 1.0, 1.0, 1.0]);
-  gl.uniform4fv(prg.uMaterialDiffuse, [0.5, 0.5, 0.5, 1.0]);
+function initLightsWithContext(glContext, program) {
+  glContext.uniform3fv(program.uLightDirection, [0.0, -1.0, -1.0]);
+  glContext.uniform4fv(program.uLightDiffuse, [1.0, 1.0, 1.0, 1.0]);
+  glContext.uniform4fv(program.uMaterialDiffuse, [0.5, 0.5, 0.5, 1.0]);
 }
 
 /**
  * This function generates SPHERE data and creates the buffers
  */
-function initBuffers() {
-  // Data Necessary to Draw a Plane with Video Texture
-  screenVertices = [-0.5, -0.5, 0, 0.5, -0.5, 0, -0.5, 0.5, 0, 0.5, 0.5, 0];
-  screenIndices = [0, 2, 1, 1, 2, 3];
-  screenNormals = utils.calculateNormals(screenVertices, screenIndices);
-  textureCoords = [0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0];
+function initBuffersWithContext(glContext, program, tvModel) {
+  const buffers = {
+    screenVertices: [-0.5, -0.5, 0, 0.5, -0.5, 0, -0.5, 0.5, 0, 0.5, 0.5, 0],
+    screenIndices: [0, 2, 1, 1, 2, 3],
+    textureCoords: [0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0]
+  };
 
-  // Data Necessary to Draw a TV object
-  // (Note: the vertex and index array are located in the "models" folder)
-  normals = utils.calculateNormals(tv.vertices, tv.indices);
+  buffers.screenNormals = utils.calculateNormals(buffers.screenVertices, buffers.screenIndices);
+  buffers.normals = utils.calculateNormals(tvModel.vertices, tvModel.indices);
 
   // Vertex Buffer for the Plane with Video Texture
-  screenVerticesBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, screenVerticesBuffer);
-  gl.bufferData(
-    gl.ARRAY_BUFFER,
-    new Float32Array(screenVertices),
-    gl.STATIC_DRAW
+  screenVerticesBuffer = glContext.createBuffer();
+  glContext.bindBuffer(glContext.ARRAY_BUFFER, screenVerticesBuffer);
+  glContext.bufferData(
+    glContext.ARRAY_BUFFER,
+    new Float32Array(buffers.screenVertices),
+    glContext.STATIC_DRAW
   );
 
   // Normals Buffer for the Plane with Video Texture
-  screenNormalsBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, screenNormalsBuffer);
-  gl.bufferData(
-    gl.ARRAY_BUFFER,
-    new Float32Array(screenNormals),
-    gl.STATIC_DRAW
+  screenNormalsBuffer = glContext.createBuffer();
+  glContext.bindBuffer(glContext.ARRAY_BUFFER, screenNormalsBuffer);
+  glContext.bufferData(
+    glContext.ARRAY_BUFFER,
+    new Float32Array(buffers.screenNormals),
+    glContext.STATIC_DRAW
   );
 
   // Index Buffer for the Plane with Video Texture
-  screenIndicesBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, screenIndicesBuffer);
-  gl.bufferData(
-    gl.ELEMENT_ARRAY_BUFFER,
-    new Uint16Array(screenIndices),
-    gl.STATIC_DRAW
+  screenIndicesBuffer = glContext.createBuffer();
+  glContext.bindBuffer(glContext.ELEMENT_ARRAY_BUFFER, screenIndicesBuffer);
+  glContext.bufferData(
+    glContext.ELEMENT_ARRAY_BUFFER,
+    new Uint16Array(buffers.screenIndices),
+    glContext.STATIC_DRAW
   );
 
   // Texture Coordinates Buffer for the Plane with Video Texture
-  screenTextureCoordBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, screenTextureCoordBuffer);
-  gl.bufferData(
-    gl.ARRAY_BUFFER,
-    new Float32Array(textureCoords),
-    gl.STATIC_DRAW
+  screenTextureCoordBuffer = glContext.createBuffer();
+  glContext.bindBuffer(glContext.ARRAY_BUFFER, screenTextureCoordBuffer);
+  glContext.bufferData(
+    glContext.ARRAY_BUFFER,
+    new Float32Array(buffers.textureCoords),
+    glContext.STATIC_DRAW
   );
-  gl.enableVertexAttribArray(prg.aTextureCoord);
-  gl.uniform1i(prg.samplerUniform, 0);
+  glContext.enableVertexAttribArray(program.aTextureCoord);
+  glContext.uniform1i(program.samplerUniform, 0);
 
   // Vertex Buffer for the TV Object
-  verticesBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, verticesBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(tv.vertices), gl.STATIC_DRAW);
+  verticesBuffer = glContext.createBuffer();
+  glContext.bindBuffer(glContext.ARRAY_BUFFER, verticesBuffer);
+  glContext.bufferData(glContext.ARRAY_BUFFER, new Float32Array(tvModel.vertices), glContext.STATIC_DRAW);
 
   // Normals Buffer for the TV Object
-  tvNormalsBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, tvNormalsBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.STATIC_DRAW);
+  tvNormalsBuffer = glContext.createBuffer();
+  glContext.bindBuffer(glContext.ARRAY_BUFFER, tvNormalsBuffer);
+  glContext.bufferData(glContext.ARRAY_BUFFER, new Float32Array(buffers.normals), glContext.STATIC_DRAW);
 
   // Indices Buffer for the TV Object
-  indicesBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indicesBuffer);
-  gl.bufferData(
-    gl.ELEMENT_ARRAY_BUFFER,
-    new Uint16Array(tv.indices),
-    gl.STATIC_DRAW
+  indicesBuffer = glContext.createBuffer();
+  glContext.bindBuffer(glContext.ELEMENT_ARRAY_BUFFER, indicesBuffer);
+  glContext.bufferData(
+    glContext.ELEMENT_ARRAY_BUFFER,
+    new Uint16Array(tvModel.indices),
+    glContext.STATIC_DRAW
   );
+
+  return buffers;
 }
 
 /* MATRIX OPERATIONS */
 var mvMatrixStack = [];
 
 function mvPushMatrix() {
-  var copy = mat4.create();
-  mat4.set(mvMatrix, copy);
-  mvMatrixStack.push(copy);
+  mvMatrixStack.push(mvPushMatrixWithState(mvMatrix));
 }
 
 function mvPopMatrix() {
-  if (mvMatrixStack.length == 0) {
+  mvMatrix = mvPopMatrixWithStack(mvMatrixStack);
+}
+
+function mvPushMatrixWithState(matrix) {
+  var copy = mat4.create();
+  mat4.set(matrix, copy);
+  return copy;
+}
+
+function mvPopMatrixWithStack(stack) {
+  if (stack.length == 0) {
     throw "Invalid popMatrix!";
   }
-  mvMatrix = mvMatrixStack.pop();
+  return stack.pop();
 }
 
 // Main function to initialize the framebuffer and assign global variables
@@ -271,8 +287,30 @@ function initFramebuffer(gl, width = 2048, height = 2048) {
 /**
  * Render Loop
  */
+function renderLoopWithDeps(drawSceneFn, animFrameFn, timeState) {
+  animFrameFn(() => renderLoopWithDeps(drawSceneFn, animFrameFn, timeState));
+  drawSceneFn();
+  timeState.time += timeState.timeIncrement;
+}
+
+function initProgram() {
+  const programs = initProgramWithContext(gl);
+  prg = programs.prg;
+  postPrg = programs.postPrg;
+}
+
+function initLights() {
+  initLightsWithContext(gl, prg);
+}
+
+function initBuffers() {
+  initBuffersWithContext(gl, prg, tv);
+}
+
 function renderLoop() {
-  utils.requestAnimFrame(renderLoop);
-  drawScene();
-  time += timeIncrement;
+  renderLoopWithDeps(
+    drawScene,
+    utils.requestAnimFrame,
+    { time, timeIncrement }
+  );
 }
