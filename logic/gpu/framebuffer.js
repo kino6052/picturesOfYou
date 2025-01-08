@@ -1,6 +1,16 @@
 // Global framebuffer state
+// Stores the WebGL framebuffer object that we render our scene into
+// Example: A WebGLFramebuffer object that acts as an offscreen rendering target
 let framebuffer;
+
+// Stores the texture that the framebuffer renders to
+// Example: A WebGLTexture containing RGBA pixel data [r, g, b, a] for each pixel
+// rendered by the framebuffer
 let framebufferTexture;
+
+// Stores the renderbuffer object used for depth information
+// Example: A WebGLRenderbuffer containing depth values [z1, z2, ...] for each pixel,
+// used for depth testing during rendering
 let renderbuffer;
 
 // Helper function to create and configure a renderbuffer
