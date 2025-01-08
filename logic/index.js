@@ -75,7 +75,7 @@ function initializeTexturesAndFramebuffers() {
   initPolaroidTexture01();
   initPolaroidTexture02();
   initPolaroidTexture03();
-  initFramebuffer();
+  initFramebuffer(gl);
 }
 
 /**

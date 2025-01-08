@@ -340,17 +340,36 @@ function initTexture() {
   videoTexture.image.src = "textures/polaroid.jpg";
 }
 
-function initFramebuffer() {
-  var width = 2048;
-  var height = 2048;
+/**
+ * Initializes a WebGL framebuffer with color and depth attachments
+ * @param {WebGLRenderingContext} gl - The WebGL context
+ * @param {number} [width=2048] - The width of the framebuffer
+ * @param {number} [height=2048] - The height of the framebuffer
+ * @returns {boolean} - Returns true if initialization was successful
+ * @throws {Error} - Throws if framebuffer is not complete
+ */
+function initFramebuffer(gl, width = 2048, height = 2048) {
+  if (!gl) {
+    throw new Error("WebGL context is required");
+  }
 
-  //1. Init Color Texture
+  // 1. Initialize Color Texture
   framebufferTexture = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, framebufferTexture);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+  // Set texture parameters
+  const textureParams = [
+    [gl.TEXTURE_MAG_FILTER, gl.NEAREST],
+    [gl.TEXTURE_MIN_FILTER, gl.NEAREST],
+    [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE],
+    [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE],
+  ];
+
+  textureParams.forEach(([param, value]) => {
+    gl.texParameteri(gl.TEXTURE_2D, param, value);
+  });
+
+  // Allocate texture storage
   gl.texImage2D(
     gl.TEXTURE_2D,
     0,
@@ -363,17 +382,16 @@ function initFramebuffer() {
     null
   );
 
-  //2. Init Render Buffer
+  // 2. Initialize Render Buffer (Depth Buffer)
   renderbuffer = gl.createRenderbuffer();
   gl.bindRenderbuffer(gl.RENDERBUFFER, renderbuffer);
   gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, width, height);
 
-  gl.bindBuffer(gl.ARRAY_BUFFER, null);
-  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-
-  //3. Init Frame Buffer
+  // 3. Initialize and Set Up Frame Buffer
   framebuffer = gl.createFramebuffer();
   gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+
+  // Attach color and depth buffers
   gl.framebufferTexture2D(
     gl.FRAMEBUFFER,
     gl.COLOR_ATTACHMENT0,
@@ -381,6 +399,7 @@ function initFramebuffer() {
     framebufferTexture,
     0
   );
+
   gl.framebufferRenderbuffer(
     gl.FRAMEBUFFER,
     gl.DEPTH_ATTACHMENT,
@@ -388,25 +407,21 @@ function initFramebuffer() {
     renderbuffer
   );
 
-  gl.framebufferTexture2D(
-    gl.FRAMEBUFFER,
-    gl.COLOR_ATTACHMENT0,
-    gl.TEXTURE_2D,
-    framebufferTexture,
-    0
-  );
-  gl.framebufferRenderbuffer(
-    gl.FRAMEBUFFER,
-    gl.DEPTH_ATTACHMENT,
-    gl.RENDERBUFFER,
-    renderbuffer
-  );
+  // Check framebuffer completeness
+  const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+  if (status !== gl.FRAMEBUFFER_COMPLETE) {
+    throw new Error(`Framebuffer is incomplete: ${status}`);
+  }
 
+  // Clean up bindings
   gl.bindTexture(gl.TEXTURE_2D, null);
   gl.bindRenderbuffer(gl.RENDERBUFFER, null);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-}
+  gl.bindBuffer(gl.ARRAY_BUFFER, null);
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 
+  return true;
+}
 /**
  * Render Loop
  */
