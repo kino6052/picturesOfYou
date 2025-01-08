@@ -1,45 +1,45 @@
 mixin sliderRow(label, id, defaultValue)
-  tr
-    td #{label}:
-    td(id=`slider-${id}-value` width="30px" align="center")= defaultValue
-    td(width="150px")
+  .slider-row
+    .slider-label #{label}
+    .slider-value(id=`slider-${id}-value`)= defaultValue
+    .slider-container
       div(id=`slider-${id}`)
 
 mixin lightControls
-  table
-    caption Light Direction
+  .light-controls
+    .control-heading Light Direction
     +sliderRow("X", "x", "0.0")
-    +sliderRow("Y", "y", "-1.0") 
+    +sliderRow("Y", "y", "-1.0")
     +sliderRow("Z", "z", "-1.0")
 
 mixin colorPicker(label)
-  tr
-    td(colspan="2")= label
-    td
+  .color-picker
+    .picker-label= label
+    .picker-control
       #colorSelectorSphere.colorSelector
         div(style="background-color: rgb(128, 204, 26)")
 
 mixin sliderControl(label, id, defaultValue)
-  tr
-    td(align="right")= label + ":"
-    td(id=`slider-${id}-value` width="30px")= defaultValue
-    td(width="150px" colspan="3")
+  .slider-row
+    .control-label= label
+    .control-value(id=`slider-${id}-value`)= defaultValue
+    .slider-container
       div(id=`slider-${id}`)
 
 mixin buttonControl(label, buttons)
-  tr
-    td(align="right")= label + ":"
-    each button in buttons
-      td(width="30px")
-        button(id=button.id)= button.text
+  .button-control
+    .control-label= label
+    .button-group
+      each button in buttons
+        button.control-button(id=button.id)= button.text
 
 mixin visualControls
-  table
-    +colorPicker("Sphere Color (Material Diffuse Term")
+  .visual-controls
+    +colorPicker("Sphere Color (Material Diffuse Term)")
     +sliderControl("Light Diffuse Term", "ld", "1.0")
     +sliderControl("Wave Amount", "wave", "1.0")
     +buttonControl("Black and White", [{id: "bw-value", text: "Update"}])
     +buttonControl("Video Playback", [
       {id: "play", text: "Play"},
       {id: "pause", text: "Pause"}
-    ]) 
+    ])

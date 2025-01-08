@@ -22,7 +22,7 @@ a {font-size:11px;}
 #buttonsCanvas{position:absolute; top:0px; right:0px; width:40%; text-align:right; z-index:101;}
 #bottom{position:relative; top:5px; left:0px; margin-top:0px; display:none; z-index:102;}
 
-.wait{font-family:'Arial'; font-weight:bold; color:#ffffff; text-align:center; vertical-align:middle%;}
+.wait{font-family:Arial,sans-serif; font-weight:bold; color:#ffffff; text-align:center; vertical-align:middle%;}
 
 table {
     font-size: 11px; 
@@ -53,6 +53,58 @@ li {
 	font-size:12px;
 }
 
+/* Add new flexbox styles */
+.controls-container {
+  display: flex;
+  gap: 2rem;
+  padding: 1rem;
+}
 
+.controls-column {
+  flex: 1;
+}
+
+.light-controls,
+.visual-controls {
+  background: #f5f5f5;
+  padding: 1rem;
+  border-radius: 4px;
+}
+
+.control-heading {
+  font-weight: bold;
+  margin-bottom: 1rem;
+}
+
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.slider-label {
+  min-width: 2rem;
+}
+
+.slider-container {
+  flex: 1;
+}
+
+.color-picker {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.button-control {
+  margin-top: 1rem;
+}
+
+.button-group {
+  display: flex;
+  gap: 0.5rem;
+}
 
  

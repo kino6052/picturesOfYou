@@ -14,12 +14,11 @@ block content
   +header
   +canvas
   #bottom
-    table
-      tr
-        td
-          +lightControls
-        td
-          +visualControls
+    .controls-container
+      .controls-column
+        +lightControls
+      .controls-column  
+        +visualControls
 
 block footer-scripts
   script.
