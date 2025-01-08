@@ -1,3 +1,21 @@
+/**
+ * Sets up event handlers for mouse and button interactions.
+ */
+function setupEventHandlers() {
+  $("#canvas-element-id").mousemove((event) => {
+    mouseX = event.pageX;
+    mouseY = screen.height - event.pageY;
+  });
+
+  $("#bw-value").click(() => {
+    bw = !bw;
+    updateBlackWhite();
+  });
+
+  $("#play").click(() => video.play());
+  $("#pause").click(() => video.pause());
+}
+
 function updateLightDiffuseTerm() {
   gl.useProgram(prg);
   var ld = $("#slider-ld").slider("value");

@@ -1,3 +1,16 @@
+// droplets
+var dropletQuantity = 100;
+var speed = 0.01;
+var rotationSpeed = 0.01;
+var spread = 3000;
+
+/* POST PROCESSING */
+var framebuffer;
+var renderbuffer;
+var blurAmount = 1.0;
+var waveAmount = 1.0;
+var bw = 0;
+
 /*
  * INITIALIZE LIGHTS
  * Description:

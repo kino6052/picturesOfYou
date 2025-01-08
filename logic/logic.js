@@ -31,28 +31,9 @@ var normals; //JavaScript Array for Normals
 var textureCoords;
 var affineTransformationsArray = [];
 
-var time = 0;
-var timeIncrement = 0.05;
-/* MOUSE INTERACTION */
-var mouseX = 0;
-var mouseY = 0;
-
 /* VIDEO TEXTURE */
 var video = document.createElement("video");
 var videoready = false;
-
-/* POST PROCESSING */
-var framebuffer;
-var renderbuffer;
-var blurAmount = 1.0;
-var waveAmount = 1.0;
-var bw = 0;
-
-// droplets
-var dropletQuantity = 100;
-var speed = 0.01;
-var rotationSpeed = 0.01;
-var spread = 3000;
 
 /* TEXTURE OPERATIONS */
 var videoTexture;
@@ -65,6 +46,12 @@ var framebufferTexture;
 
 /* MATRIX OPERATIONS */
 var mvMatrixStack = [];
+
+var time = 0;
+var timeIncrement = 0.05;
+/* MOUSE INTERACTION */
+var mouseX = 0;
+var mouseY = 0;
 
 /**
  * Render Loop
