@@ -16,7 +16,11 @@ function runWebGLApp() {
  * Initializes WebGL context and related transformations.
  */
 function initializeWebGLContext() {
-  initAffineTransformationsArray();
+  initAffineTransformationsArray(
+    affineTransformationsArray,
+    dropletQuantity,
+    spread
+  );
   gl = utils.getGLContext("canvas-element-id");
 }
 

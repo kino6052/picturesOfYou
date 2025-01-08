@@ -269,5 +269,10 @@ function drawScene() {
     alert(err);
   }
 
-  updateAffineTransformationsArray();
+  updateAffineTransformationsArray(
+    affineTransformationsArray,
+    dropletQuantity,
+    rotationSpeed,
+    speed
+  );
 }
