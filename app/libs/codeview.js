@@ -17,61 +17,14 @@ function CodeViewer() {
   this.mode = this.MODE_VIEW;
 }
 
-CodeViewer.prototype.loadSource = function (idx) {
-  if (idx >= 0 && idx < this.code.length) {
-    $("#codeContainer").empty();
-    var c = document.createElement("code");
-    c.id = "codeArea";
-    c.innerHTML = this.code[idx];
-    $("#codeContainer").append(c);
-  }
-};
-CodeViewer.prototype.showViewAndCode = function () {
-  $("#canvasContainer, #codeContainer, #buttonsCode, #bottom")
-    .fadeOut(600)
-    .hide();
-  $("#bottom").width("100%");
-  $("#buttons").after($("#bottom").detach());
-  $("#canvasContainer").width("39%");
-  $("#codeContainer, #buttonsCode, #canvasContainer, #bottom").fadeIn(600);
-  this.updateCanvasSize();
-  this.mode = this.MODE_VIEW_AND_CODE;
-};
-
-CodeViewer.prototype.showViewAndControls = function () {
-  $("#canvasContainer, #codeContainer, #buttonsCode, #bottom")
-    .fadeOut(600)
-    .hide();
-  $("#contents").prepend($("#bottom").detach());
-  $("#canvasContainer").width("39%");
-  $("#bottom").width("60%");
-  $("#bottom, #canvasContainer").fadeIn(600);
-  this.updateCanvasSize();
-  this.mode = this.MODE_VIEW_AND_CONTROLS;
-};
-
-CodeViewer.prototype.showView = function () {
-  $("#canvasContainer, #codeContainer, #buttonsCode, #bottom")
-    .fadeOut(600)
-    .hide();
-  $("#buttons").after($("#bottom").detach());
-  $("#canvasContainer, #bottom").width("100%").fadeIn(600);
-  this.updateCanvasSize();
-  this.mode = this.MODE_VIEW;
-};
-
 CodeViewer.prototype.updateCanvasSize = function () {
   c_width = $("#canvasContainer").width();
   c_height = $("#canvasContainer").height();
   $("canvas").attr("width", c_width);
   $("canvas").attr("height", c_height);
-  //console.info(c_width+'x'+c_height);
 };
 
-CodeViewer.prototype.updateGUI = function () {
-  var canvas_container = document.getElementById("canvasContainer");
-
-  //1. Create DOM Elements
+CodeViewer.prototype.createDOMElements = function () {
   var buttons = document.createElement("div");
   buttons.id = "buttons";
 
@@ -108,14 +61,6 @@ CodeViewer.prototype.updateGUI = function () {
   buttons_canvas.appendChild(btnShowCode);
   if (!this.NO_CONTROLS) buttons_canvas.appendChild(btnShowControls);
 
-  if (this.mode == this.MODE_VIEW) {
-    btnFullView.setAttribute("checked", "checked");
-  } else if (this.mode == this.MODE_VIEW_AND_CODE) {
-    btnShowCode.setAttribute("checked", "checked");
-  } else if (this.mdoe == this.MODE_VIEW_AND_CONTROLS) {
-    btnShowControls.setAttribute("checked", "checked");
-  }
-
   buttons.appendChild(buttons_code);
   buttons.appendChild(buttons_canvas);
 
@@ -128,10 +73,16 @@ CodeViewer.prototype.updateGUI = function () {
 
   code_container.appendChild(code_area);
 
-  var bottom = document.getElementById("bottom");
+  return { buttons, code_container };
+};
 
-  //2. Decide on the state of the DOM Elements upon current mode of the CodeViewer
-
+CodeViewer.prototype.setInitialState = function (
+  canvas_container,
+  code_container,
+  buttons_code,
+  btnFullView,
+  bottom
+) {
   if (this.mode == this.MODE_VIEW) {
     canvas_container.style.width = "100%";
     code_container.style.display = "none";
@@ -151,21 +102,14 @@ CodeViewer.prototype.updateGUI = function () {
     bottom.style.width = "60%";
     bottom.style.position = "relative";
   }
+};
 
-  //3. Assembling GUI
-  $("#canvasContainer").before(code_container);
-  $("#bottom").before(buttons);
-
+CodeViewer.prototype.assembleGUI = function (buttons, code_container) {
   if (this.mode == this.MODE_VIEW_AND_CONTROLS) {
     $("#contents").prepend($("#bottom").detach());
   }
-  //4. Look and Feel
 
-  //$('#btnFullView').after("<label id='lblFullView' for='btnFullView'>View</label>");
-  //$('#btnShowCode').after("<label id='lblShowCode' for='btnShowCode'>Code</label>");
-  //$('#btnShowControls').after("<label id='lblShowControls' for='btnShowControls'>Controls</label>");
   $("#buttonsCanvas").buttonset();
-
   $("#buttonsCode").buttonset();
 
   $('input[name="mode"]').change(function () {
@@ -178,8 +122,9 @@ CodeViewer.prototype.updateGUI = function () {
       cview.showViewAndCode();
     }
   });
+};
 
-  //5. Show Canvas
+CodeViewer.prototype.showCanvas = function () {
   this.updateCanvasSize();
   var selector;
   if (this.mode == this.MODE_VIEW) {
@@ -189,6 +134,25 @@ CodeViewer.prototype.updateGUI = function () {
   }
 
   $(selector).fadeIn(600);
+};
+
+CodeViewer.prototype.updateGUI = function () {
+  var canvas_container = document.getElementById("canvasContainer");
+  var bottom = document.getElementById("bottom");
+
+  var { buttons, code_container } = this.createDOMElements();
+  var buttons_code = buttons.querySelector("#buttonsCode");
+  var btnFullView = buttons.querySelector("#btnFullView");
+
+  this.setInitialState(
+    canvas_container,
+    code_container,
+    buttons_code,
+    btnFullView,
+    bottom
+  );
+  this.assembleGUI(buttons, code_container);
+  this.showCanvas();
 };
 
 CodeViewer.prototype.run = function (m, nc) {
@@ -216,9 +180,7 @@ CodeViewer.prototype.execute = function () {
   if (this.TIMER) clearInterval(this.TIMER);
 
   this.code[0] = window.prettyPrintOne($("#code-js").html(), "js", true);
-
   this.code[1] = window.prettyPrintOne($("#shader-vs").html(), "js", true);
-
   this.code[2] = window.prettyPrintOne($("#shader-fs").html(), "js", true);
 
   $("#codeContainer, #cview").remove();
@@ -230,6 +192,5 @@ CodeViewer.prototype.execute = function () {
   this.code[3] = window.prettyPrintOne(html, "html", true);
 
   this.updateGUI();
-
   this.loadSource(0);
 };
