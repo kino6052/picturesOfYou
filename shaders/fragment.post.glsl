@@ -34,17 +34,6 @@ float rand(vec2 co) {
 }
 
 void main(void) {
-    // Apply horizontal blur
-    vec4 frameColor = offsetLookup(-4.0, 0.0) * 0.05 * uBlurAmount;
-    frameColor += offsetLookup(-3.0, 0.0) * 0.09 * uBlurAmount;
-    frameColor += offsetLookup(-2.0, 0.0) * 0.12 * uBlurAmount;
-    frameColor += offsetLookup(-1.0, 0.0) * 0.15 * uBlurAmount;
-    frameColor += offsetLookup(0.0, 0.0) * 0.16 * uBlurAmount;
-    frameColor += offsetLookup(1.0, 0.0) * 0.15 * uBlurAmount;
-    frameColor += offsetLookup(2.0, 0.0) * 0.12 * uBlurAmount;
-    frameColor += offsetLookup(3.0, 0.0) * 0.09 * uBlurAmount;
-    frameColor += offsetLookup(4.0, 0.0) * 0.05 * uBlurAmount;
-
     // Apply radial wave distortion
     vec2 texcoord = vTextureCoord;
     vec2 center = vec2(0.5, 0.5); // Center of the screen
@@ -57,10 +46,33 @@ void main(void) {
     
     // Apply distortion along the radial direction
     texcoord = center + toCenter * (1.0 + wave);
+
+    // Apply blur based on distance from center
+    vec4 blurredColor = vec4(0.0);
+    float totalWeight = 0.0;
+    float blurRadius = dist * uBlurAmount * 0.02; // Blur increases with distance
     
-    // Combine effects with noise
-    vec4 fragment = (texture2D(uSampler, texcoord) + frameColor)/2.0 + rand(vTextureCoord + mod(uTime, 10.0))/5.0;
+    // Sample in a circular pattern with more samples for smoother blur
+    const int SAMPLES = 16;
+    vec4 centerColor = texture2D(uSampler, texcoord);
     
+    // Add center sample with highest weight
+    blurredColor += centerColor * 2.0;
+    totalWeight += 2.0;
+    
+    // Sample surrounding pixels in concentric circles
+    for(int i = 0; i < SAMPLES; i++) {
+        float a = float(i) * (2.0 * 3.14159) / float(SAMPLES);
+        vec2 offset = vec2(cos(a), sin(a)) * blurRadius;
+        
+        // Gaussian-like weight falloff
+        float weight = exp(-length(offset) * length(offset) / (blurRadius * blurRadius));
+        blurredColor += texture2D(uSampler, texcoord + offset) * weight;
+        totalWeight += weight;
+    }
+    
+    // Normalize by total weight for proper averaging
+    vec4 fragment = blurredColor / totalWeight;
     // Output either B&W or color
     if (uBW) {
         gl_FragColor = vec4(fragment.r, fragment.r, fragment.r, 1.0);

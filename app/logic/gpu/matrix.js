@@ -28,8 +28,8 @@ function mvPopMatrixWithStack(stack) {
 function setupViewMatrix() {
   mat4.identity(mvMatrix);
   mat4.translate(mvMatrix, [0.0, -1.3, -3.0]);
-  mat4.rotate(mvMatrix, (-3.14 * 29) / 180 + mouseY / 10000, [1, 0, 0]);
-  mat4.rotate(mvMatrix, mouseX / 10000, [0, 1, 0]);
+  mat4.rotate(mvMatrix, (-3.14 * 15) / 180 - mouseY / 2000, [1, 0, 0]);
+  mat4.rotate(mvMatrix, (-500 + mouseX) / 1000, [0, 1, 0]);
 }
 
 function applyTransformations(transformations) {
