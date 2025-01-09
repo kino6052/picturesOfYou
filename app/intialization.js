@@ -28,22 +28,22 @@ async function loadAndAppendScript(url, id, type) {
 async function run() {
   const scriptsToLoad = [
     {
-      url: "../shaders/vertex.glsl",
+      url: "./app/shaders/vertex.glsl",
       id: "shader-vs",
       type: "x-shader/x-vertex",
     },
     {
-      url: "../shaders/vertex.post.glsl",
+      url: "./app/shaders/vertex.post.glsl",
       id: "shader-post-vs",
       type: "x-shader/x-vertex",
     },
     {
-      url: "../shaders/fragment.glsl",
+      url: "./app/shaders/fragment.glsl",
       id: "shader-fs",
       type: "x-shader/x-fragment",
     },
     {
-      url: "../shaders/fragment.post.glsl",
+      url: "./app/shaders/fragment.post.glsl",
       id: "shader-post-fs",
       type: "x-shader/x-fragment",
     },
