@@ -1,125 +1,49 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kirill Novik: Final CSCI4229 Project</title>
+    <script type="module" crossorigin src="./assets/index-C2ybVdkb.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-C0uvfMjq.css">
+  </head>
+  <body>
+    <header>
+      <h1>Kirill Novik CSCI 4229 Final Project</h1>
+      <h2>"The Cure - Pictures of You" Visualization</h2>
+    </header>
 
-<head>
-  <title>Kirill Novik: Final CSCI4229 Project</title>
-  <meta http-equiv="content-type" content="text/html; charset=ISO-8859-1"><!-- CSS Styles-->
-  <link href="view/css/style.css" type="text/css" rel="stylesheet">
-  <link href="view/css/desert.css" type="text/css" rel="stylesheet">
-  <link href="view/css/colorpicker.css" type="text/css" rel="stylesheet">
-  <link href="view/css/smoothness/jquery-ui-1.8.13.custom.css" type="text/css" rel="stylesheet">
-  <!-- JavaScript Libraries-->
-  <script type="text/javascript" src="app/libs/gl-matrix-min.js"></script>
-  <script type="text/javascript" src="app/libs/jquery-1.5.1.min.js"></script>
-  <script type="text/javascript" src="app/libs/jquery-ui-1.8.13.custom.min.js"></script>
-  <script type="text/javascript" src="app/libs/prettify.js"></script>
-  <script type="text/javascript" src="app/libs/utils.js"></script>
-  <script type="text/javascript" src="app/libs/colorpicker.js"></script>
-  <script type="text/javascript" src="app/libs/codeview.js"></script><!-- Assets-->
-  <script type="text/javascript" src="app/assets/tv.js"></script><!-- Logic-->
-  <script src="app/logic/utils.js"></script>
-  <script src="app/logic/shared.js"></script>
-  <script src="app/logic/gpu/matrix.js"></script>
-  <script src="app/logic/gpu/buffers.js"></script>
-  <script src="app/logic/gpu/programs.js"></script>
-  <script src="app/logic/gpu/textures.js"></script>
-  <script src="app/logic/gpu/framebuffer.js"></script>
-  <script src="app/logic/scene/rain.js"></script>
-  <script src="app/logic/scene/tv.js"></script>
-  <script src="app/logic/scene/background.js"></script>
-  <script src="app/logic/scene/lights.js"></script>
-  <script src="app/logic/scene/index.js"></script>
-  <script src="app/logic/index.js"></script>
-  <script src="app/logic/main.js"></script>
-  <script src="app/logic/gpu/postprocessing.js"></script>
-  <script src="app/intialization.js"> </script>
-</head>
-
-<body>
-  <div id="top">
-    <h1>Kirill Novik CSCI 4229 Final Project</h1>
-    <h2>"The Cure - Pictures of You" Visualization</h2>
-    <div id="logo-packt"><img src="packt.gif" /></div>
-  </div>
-  <div id="contents">
-    <div id="canvasContainer"><canvas id="canvas-element-id" width="480" height="400">Your browser does not support the
-        HTML5 canvas element.</canvas></div>
-    <div id="controls"> </div>
-  </div>
-  <div id="bottom">
-    <div class="controls-container">
-      <div class="controls-column">
-        <div class="light-controls">
-          <div class="control-heading">Light Direction</div>
-          <div class="slider-row">
-            <div class="slider-label">X</div>
-            <div class="slider-value" id="slider-x-value">0.0</div>
-            <div class="slider-container">
-              <div id="slider-x"></div>
-            </div>
-          </div>
-          <div class="slider-row">
-            <div class="slider-label">Y</div>
-            <div class="slider-value" id="slider-y-value">-1.0</div>
-            <div class="slider-container">
-              <div id="slider-y"></div>
-            </div>
-          </div>
-          <div class="slider-row">
-            <div class="slider-label">Z</div>
-            <div class="slider-value" id="slider-z-value">-1.0</div>
-            <div class="slider-container">
-              <div id="slider-z"></div>
-            </div>
-          </div>
+    <main>
+      <div id="stage">
+        <canvas id="canvas" aria-label="A TV set playing the music video while polaroids fall past it"></canvas>
+        <div id="overlay">
+          <button id="start" type="button" hidden>Play with sound</button>
+          <p id="status" class="busy" role="status">Loading…</p>
         </div>
       </div>
-      <div class="controls-column">
-        <div class="visual-controls">
-          <div class="color-picker">
-            <div class="picker-label">Sphere Color (Material Diffuse Term)</div>
-            <div class="picker-control">
-              <div class="colorSelector" id="colorSelectorSphere">
-                <div style="background-color: rgb(128, 204, 26)"></div>
-              </div>
-            </div>
-          </div>
-          <div class="slider-row">
-            <div class="control-label">Light Diffuse Term</div>
-            <div class="control-value" id="slider-ld-value">1.0</div>
-            <div class="slider-container">
-              <div id="slider-ld"></div>
-            </div>
-          </div>
-          <div class="slider-row">
-            <div class="control-label">Wave Amount</div>
-            <div class="control-value" id="slider-wave-value">1.0</div>
-            <div class="slider-container">
-              <div id="slider-wave"></div>
-            </div>
-          </div>
-          <div class="slider-row">
-            <div class="control-label">Blur Amount</div>
-            <div class="control-value" id="slider-blur-value">1.0</div>
-            <div class="slider-container">
-              <div id="slider-blur"></div>
-            </div>
-          </div>
-          <div class="button-control">
-            <div class="control-label">Black and White</div>
-            <div class="button-group"><button class="control-button" id="bw-value">Update</button></div>
-          </div>
-          <div class="button-control">
-            <div class="control-label">Video Playback</div>
-            <div class="button-group"><button class="control-button" id="play">Play</button><button
-                class="control-button" id="pause">Pause</button></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-  <script>cview.run(cview.MODE_VIEW_AND_CODE);</script>
-  <script src="./view/ui.js"></script>
-</body>
+      <video id="video" hidden loop playsinline preload="none"></video>
 
+      <form id="controls">
+        <fieldset>
+          <legend>Light Direction</legend>
+          <label>X <output></output><input id="light-x" type="range" min="-1.01" max="1.01" step="0.01" value="0" /></label>
+          <label>Y <output></output><input id="light-y" type="range" min="-1.01" max="1.01" step="0.01" value="-1" /></label>
+          <label>Z <output></output><input id="light-z" type="range" min="-1.01" max="1.01" step="0.01" value="-1" /></label>
+        </fieldset>
+        <fieldset>
+          <legend>Effects</legend>
+          <label>TV Color (Material Diffuse Term) <input id="material" type="color" value="#808080" /></label>
+          <label>Light Diffuse Term <output></output><input id="light-diffuse" type="range" min="-0.01" max="1.01" step="0.01" value="1" /></label>
+          <label>Wave Amount <output></output><input id="wave" type="range" min="1" max="5" step="0.1" value="1" /></label>
+          <label>Blur Amount <output></output><input id="blur" type="range" min="1" max="5" step="0.1" value="1" /></label>
+          <label>Black and White <input id="black-and-white" type="checkbox" /></label>
+          <div class="buttons">
+            Video Playback
+            <button id="play" type="button">Play</button>
+            <button id="pause" type="button">Pause</button>
+          </div>
+        </fieldset>
+      </form>
+    </main>
+  </body>
 </html>

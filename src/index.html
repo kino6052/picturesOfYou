@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kirill Novik: Final CSCI4229 Project</title>
+    <link rel="stylesheet" href="./style.css" />
+    <script type="module" src="./main.ts"></script>
+  </head>
+  <body>
+    <header>
+      <h1>Kirill Novik CSCI 4229 Final Project</h1>
+      <h2>"The Cure - Pictures of You" Visualization</h2>
+    </header>
+
+    <main>
+      <div id="stage">
+        <canvas id="canvas" aria-label="A TV set playing the music video while polaroids fall past it"></canvas>
+        <div id="overlay">
+          <button id="start" type="button" hidden>Play with sound</button>
+          <p id="status" class="busy" role="status">Loading…</p>
+        </div>
+      </div>
+      <video id="video" hidden loop playsinline preload="none"></video>
+
+      <form id="controls">
+        <fieldset>
+          <legend>Light Direction</legend>
+          <label>X <output></output><input id="light-x" type="range" min="-1.01" max="1.01" step="0.01" value="0" /></label>
+          <label>Y <output></output><input id="light-y" type="range" min="-1.01" max="1.01" step="0.01" value="-1" /></label>
+          <label>Z <output></output><input id="light-z" type="range" min="-1.01" max="1.01" step="0.01" value="-1" /></label>
+        </fieldset>
+        <fieldset>
+          <legend>Effects</legend>
+          <label>TV Color (Material Diffuse Term) <input id="material" type="color" value="#808080" /></label>
+          <label>Light Diffuse Term <output></output><input id="light-diffuse" type="range" min="-0.01" max="1.01" step="0.01" value="1" /></label>
+          <label>Wave Amount <output></output><input id="wave" type="range" min="1" max="5" step="0.1" value="1" /></label>
+          <label>Blur Amount <output></output><input id="blur" type="range" min="1" max="5" step="0.1" value="1" /></label>
+          <label>Black and White <input id="black-and-white" type="checkbox" /></label>
+          <div class="buttons">
+            Video Playback
+            <button id="play" type="button">Play</button>
+            <button id="pause" type="button">Pause</button>
+          </div>
+        </fieldset>
+      </form>
+    </main>
+  </body>
+</html>
