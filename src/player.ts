@@ -2,7 +2,7 @@ export interface Player {
   /** Starts downloading. Called once the page is up, so the video doesn't compete with it. */
   load(): void;
   play(): void;
-  pause(): void;
+  toggle(): void;
   /** Tab hidden: stops the video and remembers whether to carry on. */
   suspend(): void;
   /** Tab visible again. */
@@ -65,7 +65,7 @@ export function createPlayer(
       video.load();
     },
     play,
-    pause: () => video.pause(),
+    toggle: () => (video.paused ? play() : video.pause()),
     suspend() {
       resumeWhenVisible = !video.paused;
       video.pause();

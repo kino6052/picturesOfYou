@@ -2,48 +2,82 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Kirill Novik: Final CSCI4229 Project</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#10141c" />
+    <title>The Cure: Pictures of You, in WebGL</title>
     <link rel="stylesheet" href="./style.css" />
     <script type="module" src="./main.ts"></script>
   </head>
   <body>
-    <header>
-      <h1>Kirill Novik CSCI 4229 Final Project</h1>
-      <h2>"The Cure - Pictures of You" Visualization</h2>
-    </header>
+    <canvas
+      id="canvas"
+      tabindex="0"
+      role="img"
+      aria-label="A TV in a desert plays the music video while polaroids fall all around. Drag, or use the arrow keys, to look around."
+    ></canvas>
 
-    <main>
-      <div id="stage">
-        <canvas id="canvas" aria-label="A TV set playing the music video while polaroids fall past it"></canvas>
-        <div id="overlay">
-          <button id="start" type="button" hidden>Play with sound</button>
-          <p id="status" class="busy" role="status">Loading…</p>
-        </div>
-      </div>
-      <video id="video" hidden loop playsinline preload="none"></video>
-
-      <form id="controls">
-        <fieldset>
-          <legend>Light Direction</legend>
-          <label>X <output></output><input id="light-x" type="range" min="-1.01" max="1.01" step="0.01" value="0" /></label>
-          <label>Y <output></output><input id="light-y" type="range" min="-1.01" max="1.01" step="0.01" value="-1" /></label>
-          <label>Z <output></output><input id="light-z" type="range" min="-1.01" max="1.01" step="0.01" value="-1" /></label>
-        </fieldset>
-        <fieldset>
-          <legend>Effects</legend>
-          <label>TV Color (Material Diffuse Term) <input id="material" type="color" value="#808080" /></label>
-          <label>Light Diffuse Term <output></output><input id="light-diffuse" type="range" min="-0.01" max="1.01" step="0.01" value="1" /></label>
-          <label>Wave Amount <output></output><input id="wave" type="range" min="1" max="5" step="0.1" value="1" /></label>
-          <label>Blur Amount <output></output><input id="blur" type="range" min="1" max="5" step="0.1" value="1" /></label>
-          <label>Black and White <input id="black-and-white" type="checkbox" /></label>
-          <div class="buttons">
-            Video Playback
-            <button id="play" type="button">Play</button>
-            <button id="pause" type="button">Pause</button>
-          </div>
-        </fieldset>
-      </form>
+    <main id="center">
+      <section id="welcome" class="glass">
+        <p class="artist">The Cure</p>
+        <h1>Pictures of You</h1>
+        <p class="byline">A WebGL music video by Kirill Novik</p>
+        <button id="start" type="button" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
+          Play with sound
+        </button>
+      </section>
+      <p id="status" class="glass busy" role="status">Loading…</p>
     </main>
+
+    <div id="hud" hidden>
+      <p id="title" class="glass">The Cure: Pictures of You</p>
+
+      <details id="panel" class="glass">
+        <summary>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10M16 4v6M8 14v6" /></svg>
+          Effects and light
+        </summary>
+        <div class="panel-body">
+          <details open>
+            <summary>Effects</summary>
+            <div id="effects"></div>
+          </details>
+          <details>
+            <summary>Light</summary>
+            <div class="sliders">
+              <label><span>Direction X</span><output></output><input id="light-x" type="range" min="-1.01" max="1.01" step="0.01" value="0" /></label>
+              <label><span>Direction Y</span><output></output><input id="light-y" type="range" min="-1.01" max="1.01" step="0.01" value="-1" /></label>
+              <label><span>Direction Z</span><output></output><input id="light-z" type="range" min="-1.01" max="1.01" step="0.01" value="-1" /></label>
+              <label><span>Diffuse term</span><output></output><input id="light-diffuse" type="range" min="-0.01" max="1.01" step="0.01" value="1" /></label>
+              <label><span>TV color</span><input id="material" type="color" value="#808080" /></label>
+            </div>
+          </details>
+          <p class="credits">
+            Kirill Novik, CSCI 4229 final project. Background photo © 2009 QT Luong, terragalleria.com.
+          </p>
+        </div>
+      </details>
+
+      <div id="transport" class="glass" role="group" aria-label="Video controls">
+        <button id="play" type="button" aria-label="Play">
+          <svg class="off" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
+          <svg class="on" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z" /></svg>
+        </button>
+        <span id="elapsed">0:00</span>
+        <input id="seek" type="range" min="0" max="334" step="0.1" value="0" aria-label="Seek" />
+        <span id="duration">5:34</span>
+        <button id="mute" type="button" aria-label="Mute">
+          <svg class="off" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 9v6h4l5 4V5L8 9z" /><path class="stroke" d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11" />
+          </svg>
+          <svg class="on" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 9v6h4l5 4V5L8 9z" /><path class="stroke" d="M16 9.5l5 5M21 9.5l-5 5" />
+          </svg>
+        </button>
+        <input id="volume" type="range" min="0" max="1" step="0.02" value="1" aria-label="Volume" />
+      </div>
+    </div>
+
+    <video id="video" hidden loop playsinline preload="none"></video>
   </body>
 </html>

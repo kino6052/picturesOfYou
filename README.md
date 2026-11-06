@@ -5,7 +5,11 @@ Kirill Novik CSCI 4229: Music Video for the Cure Song "Pictures of You" Made in 
 
 * Result: https://kino6052.github.io/picturesOfYou/
 * Press "Play with sound" to start: browsers don't start a video with sound on their own.
-* Move the pointer over the picture (or drag sideways on a phone) to turn the camera.
+* Drag, or use the arrow keys, to look around. Polaroids move out of the pointer's way, or the finger's.
+* Space plays and pauses, M mutes, Esc closes the panel.
+* "Effects and light" (top right) has the post-processing effects, each with a switch and an amount.
+
+It needs WebGL 2. Under `prefers-reduced-motion` the rain slows right down and the camera has no inertia.
 
 ##### Running it
 
@@ -27,13 +31,17 @@ GitHub Pages serves the root of a branch, so the built page sits in the root nex
 | Path | What it is |
 | --- | --- |
 | `src/` | **All the source. Edit here.** |
-| `src/index.html`, `src/style.css` | The page |
+| `src/index.html`, `src/style.css` | The page and the HUD's look |
 | `src/main.ts` | Startup, frame loop, canvas size, hidden tab, lost GPU context |
-| `src/renderer.ts` | Raw WebGL: the scene pass and the post-processing pass |
-| `src/rain.ts`, `src/model.ts` | Falling polaroids; TV model loading and normals |
-| `src/player.ts`, `src/controls.ts` | Video and start button; light and effect controls |
+| `src/renderer.ts` | Raw WebGL 2: the scene, motion echo and post-processing passes |
+| `src/camera.ts`, `src/input.ts` | Looking around; pointer, touch and arrow keys |
+| `src/rain.ts` | The falling polaroids and the pointer's push, in flat typed arrays |
+| `src/hud.ts`, `src/settings.ts` | HUD behaviour; the effects list and what the renderer reads |
+| `src/player.ts`, `src/pulse.ts` | Video and start button; bass level for the audio pulse |
+| `src/model.ts` | TV model loading and normals |
 | `src/shaders/` | GLSL, imported as text |
-| `src/assets/` | Video, textures and the TV model |
+| `src/assets/` | Video, sky faces, polaroid atlas and the TV model |
+| `scripts/` | Rebuild the sky faces and the atlas from the originals in git history |
 | `index.html`, `assets/` | **Build output, committed on purpose. Don't edit**; `bun run build` replaces them |
 
 `vite.config.ts` sets `base: "./"`, so every URL in the build is relative and the page works at
@@ -45,8 +53,7 @@ of the branch that holds it. `.nojekyll` makes Pages serve the files as they are
 
 ##### Assets
 
-The originals are in the git history (commit `90cd933`, `app/assets/`). They were made smaller with
-[ffmpeg-static](https://www.npmjs.com/package/ffmpeg-static) and [sharp](https://sharp.pixelplumbing.com):
+The originals are in the git history (commit `90cd933`, `app/assets/`).
 
 * `pictures.mp4`, from 29 MB to 17 MB. The picture stays 480x360 at 30 fps and was re-encoded; the
   audio is the original AAC track, copied unchanged:
@@ -56,8 +63,12 @@ The originals are in the git history (commit `90cd933`, `app/assets/`). They wer
   ffmpeg -i video.mp4 -i pictures.mp4 -map 0:v:0 -map 1:a:0 -c copy -movflags +faststart out.mp4
   ```
 
-* `textures/*.jpg`: `sharp(file).jpeg({ quality: 72, mozjpeg: true })`. The copyright comment of
-  `bg.jpg` was put back afterwards.
+* `textures/sky/*.jpg`: `bun scripts/make-sky.ts`. The old cubemap in the history is an office lobby,
+  so the faces are built from the background photo instead, repeated and flipped around the viewer.
+  That photo is only 576 pixels wide, so the sky stays a little soft on large screens. The script
+  also paints the TV's shadow onto the ground; keep it in step with the TV's place in `renderer.ts`.
+* `textures/atlas.jpg`: `FFMPEG=path/to/ffmpeg bun scripts/make-atlas.ts`. 24 frames of the video and
+  the two old polaroid images, each with a polaroid border, in one texture so they draw in one call.
 * `tv.bin`: the `vertices` and `indices` arrays of the old `tv.js`, unchanged. Two uint32 counts,
   then the float32 vertices, then the uint16 indices.
 
@@ -70,7 +81,7 @@ Project Components:                                       (Attributions)
     3. Textures                                           _(WebGL Beginner's Guide, webglacademy.com)
   2. Post-processing Vertex and Fragment Shaders
     1. Wave Effect                                        _(OpenGL_Programming wiki book)          
-    2. Noise Effect                                       _(stackoverflow.com/questions/4200224/random-noise-functions-for-glsl) (no longer applied by the shader)
+    2. Noise Effect                                       _(stackoverflow.com/questions/4200224/random-noise-functions-for-glsl)
     3. Black and White Effect
     4. Blur Effect                                        _(WebGL Beginner's Guide)
   3. Objects
@@ -78,7 +89,7 @@ Project Components:                                       (Attributions)
        1. Static Texture
        2. Video Texture                                   _(krpano.com/ios/bugs/ios8-webgl-video/)
     2. Blender TV set 3d Model                            _(Turbo-Squid.com)
-  4. Background Photo                                     _(copyright 2009 Quang-Tuan Luong, terragalleria.com/photo/?ref=usaz44922)
+  4. Skybox from a Background Photo                       _(copyright 2009 Quang-Tuan Luong, terragalleria.com/photo/?ref=usaz44922)
   5. Matrix Math                                          _(gl-matrix)
 
 ##### Description

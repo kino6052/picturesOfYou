@@ -16,8 +16,10 @@ uniform vec4 uMaterialDiffuse;
 
 varying vec2 vTextureCoord;
 varying vec4 vFinalColor;
+varying float vDistance;
 
 void main(void) {
+  // World space, so turning the camera doesn't move the light
   vec3 N = normalize(vec3(uNMatrix * vec4(aVertexNormal, 1.0)));
   vec3 L = normalize(uLightDirection);
 
@@ -28,5 +30,7 @@ void main(void) {
   vFinalColor.a = 1.0;
   vTextureCoord = aTextureCoord;
 
-  gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+  vec4 fromEye = uMVMatrix * vec4(aVertexPosition, 1.0);
+  vDistance = length(fromEye.xyz);
+  gl_Position = uPMatrix * fromEye;
 }
